@@ -3,6 +3,7 @@
 > [!WARNING]
 > 1) This app may contain explicit content, so viewer discretion is **strongly advised**. 
 > 2) Yes I still maintain this app, but not as often as in the past. This app will be keep maintained until 2026.
+> 3) This app is a fork of VNDB lite with enhanced functionality and partial Japanese language support.
 
 <!-- Banner -->
 <img src="./media/banner.png" align="center">
@@ -61,7 +62,7 @@ est. read time: <b>6.5 minutes</b>
 
 ## Quick start
 
-[Download the latest version here.](https://github.com/Daniel-C-J/vndb-lite/releases)
+[Download the latest version here.](https://github.com/Kdroidwin/VNPockets/releases)
 
 N.B. - currently, this app only supports Android. I am unable to test the app for iOS, because I don't have any device from Apple. Contact me if you want to help me test VNDB Lite for iOS! :D
 
@@ -85,7 +86,6 @@ Credit to flat-gal-expert for refactoring this README file and other files!
 
 And hey, I also accept donations!
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P4L666F)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
