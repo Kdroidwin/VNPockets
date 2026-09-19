@@ -9,7 +9,7 @@
 <img src="./media/banner.png" align="center">
 
 <!-- Title & description -->
-<h1 align="center">[VNDB Lite]</h1>
+<h1 align="center">[VNPockets]</h1>
 <p align="center">A lite, free, and open-source mobile version of your favorite website, vndb.org.</p>
 
 <!-- Badges -->
@@ -272,7 +272,6 @@ Distributed under terms of the [Apache-2.0 License](./LICENSE).
 
 Daniel CJ - dcj.dandy800@passinbox.com
 
-VNDB Lite's Git repositories: [https://github.com/Daniel-C-J/vndb-lite](https://github.com/Daniel-C-J/vndb-lite), [https://codeberg.org/daniel-c-j/vndb-lite/](https://codeberg.org/daniel-c-j/vndb-lite/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
