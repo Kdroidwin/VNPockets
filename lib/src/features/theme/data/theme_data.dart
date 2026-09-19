@@ -73,7 +73,7 @@ enum ThemeCode {
     tertiary: Colors.white,
     brightness: Brightness.light,
   ),
-  
+
   toho(
     themeName: "Touhou",
     backgroundImgPath: "assets/images/bg/bgTouhou.png",
@@ -112,6 +112,17 @@ enum ThemeCode {
     secondary: Color.fromARGB(255, 240, 180, 140),
     tertiary: Colors.white,
     brightness: Brightness.light,
+  ),
+
+  amoledBlack(
+    themeName: "AMOLED Black",
+    backgroundImgPath: "",
+    seedColor: Color(0xFFBB86FC),
+    primary: Colors.black,
+    secondary: Color(0xFFBB86FC),
+    tertiary: Colors.white,
+    brightness: Brightness.dark,
+    isAmoled: true,
   );
 
   const ThemeCode({
@@ -122,6 +133,7 @@ enum ThemeCode {
     required this.secondary,
     required this.tertiary,
     required this.brightness,
+    this.isAmoled = false,
   });
 
   final String themeName;
@@ -131,4 +143,5 @@ enum ThemeCode {
   final Color secondary;
   final Color tertiary;
   final Brightness brightness;
+  final bool isAmoled;
 }

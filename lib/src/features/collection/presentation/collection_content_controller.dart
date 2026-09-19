@@ -38,7 +38,12 @@ class CollectionContentNotifier extends _$CollectionContentNotifier {
 
 @Riverpod(
   keepAlive: true,
-  dependencies: [localCollectionRepo, sharedPref, localVnRepo, validateVnAndSaveToLocal],
+  dependencies: [
+    localCollectionRepo,
+    sharedPref,
+    localVnRepo,
+    validateVnAndSaveToLocal,
+  ],
 )
 class CollectionContentController extends _$CollectionContentController {
   @override
@@ -124,6 +129,36 @@ class CollectionContentController extends _$CollectionContentController {
     }
   }
 
+  /// Moves an item within a status tab and persists the custom order by VN ID.
+  Future<void> reorderCustom(
+    String statusName,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final widgets = [...?state[statusName]];
+    if (newIndex > oldIndex) newIndex--;
+    if (oldIndex < 0 ||
+        newIndex < 0 ||
+        oldIndex >= widgets.length ||
+        newIndex >= widgets.length) {
+      return;
+    }
+
+    final movedWidget = widgets.removeAt(oldIndex);
+    widgets.insert(newIndex, movedWidget);
+    state = {...state, statusName: widgets};
+
+    final raw = rawP1BasedOnStatus[statusName];
+    if (raw != null && oldIndex < raw.length) {
+      final movedRaw = raw.removeAt(oldIndex);
+      raw.insert(newIndex, movedRaw);
+    }
+
+    await ref.read(localCollectionRepoProvider).saveCustomOrder(statusName, [
+      for (final item in widgets) item.p1.id,
+    ]);
+  }
+
   //
   // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   //
@@ -148,7 +183,9 @@ class CollectionContentController extends _$CollectionContentController {
         bool isConnected = false;
 
         await Future.delayed(const Duration(milliseconds: 1500));
-        final valid = await ref.read(validateVnAndSaveToLocalProvider(vnId).future);
+        final valid = await ref.read(
+          validateVnAndSaveToLocalProvider(vnId).future,
+        );
         isConnected = networkInfo;
 
         // Skip the loop. Ignore the current record.
@@ -173,11 +210,15 @@ class CollectionContentController extends _$CollectionContentController {
   //
 
   bool _hasDuplicate(String statusName, String vnId) {
-    return (state[statusName] ?? []).where((item) => item.p1.id == vnId).isNotEmpty;
+    return (state[statusName] ?? [])
+        .where((item) => item.p1.id == vnId)
+        .isNotEmpty;
   }
 
   void _removeDuplication(String statusName, String vnId) {
-    rawP1BasedOnStatus[statusName]!.removeWhere((record) => record['id'] == vnId);
+    rawP1BasedOnStatus[statusName]!.removeWhere(
+      (record) => record['id'] == vnId,
+    );
     state[statusName]!.removeWhere((record) => record.p1.id == vnId);
   }
 

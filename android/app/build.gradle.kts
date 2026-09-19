@@ -8,7 +8,6 @@ plugins {
 android {
     namespace = "com.vndblite.dcj"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true // For flutter_local_notifications package
@@ -29,11 +28,22 @@ android {
 		multiDexEnabled = true
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = System.getenv("VNP_KEYSTORE_PATH")
+            if (storeFilePath != null) {
+                storeFile = file(storeFilePath)
+                storePassword = System.getenv("VNP_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("VNP_KEY_ALIAS")
+                keyPassword = System.getenv("VNP_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+
+            signingConfig = signingConfigs.getByName("release")
 			
 			isMinifyEnabled = true
             isShrinkResources = true

@@ -25,7 +25,8 @@ class App extends ConsumerWidget {
   static String currentRootRoute = "/";
 
   static String get currentRoute {
-    final routeName = GoRouter.maybeOf(NavigationService.currentContext)?.state.name;
+    final routeName =
+        GoRouter.maybeOf(NavigationService.currentContext)?.state.name;
     if (routeName != null) return routeName;
 
     // Default
@@ -33,7 +34,10 @@ class App extends ConsumerWidget {
   }
 
   static String get currentFullRoute {
-    final fullRoute = GoRouter.maybeOf(NavigationService.currentContext)?.state.matchedLocation;
+    final fullRoute =
+        GoRouter.maybeOf(
+          NavigationService.currentContext,
+        )?.state.matchedLocation;
     if (fullRoute != null) return fullRoute;
 
     // Default
@@ -41,12 +45,19 @@ class App extends ConsumerWidget {
   }
 
   static bool get isInMainTab =>
-      isInHomeScreen || isInSearchScreen || isInCollectionScreen || isInOthersScreen;
+      isInHomeScreen ||
+      isInSearchScreen ||
+      isInCollectionScreen ||
+      isInOthersScreen;
   static bool get isInHomeScreen => currentRoute.contains(AppRoute.home.name);
-  static bool get isInSearchScreen => currentRoute.contains(AppRoute.search.name);
-  static bool get isInCollectionScreen => currentRoute.contains(AppRoute.collection.name);
-  static bool get isInOthersScreen => currentRoute.contains(AppRoute.others.name);
-  static bool get isInVnDetailScreen => currentRoute.contains(AppRoute.vnDetail.name);
+  static bool get isInSearchScreen =>
+      currentRoute.contains(AppRoute.search.name);
+  static bool get isInCollectionScreen =>
+      currentRoute.contains(AppRoute.collection.name);
+  static bool get isInOthersScreen =>
+      currentRoute.contains(AppRoute.others.name);
+  static bool get isInVnDetailScreen =>
+      currentRoute.contains(AppRoute.vnDetail.name);
 
   static bool _isImageCached = false;
 
@@ -76,15 +87,35 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final goRouter = ref.watch(goRouterProvider);
     final theme = ref.watch(appThemeStateProvider);
+    final japaneseUi = ref.watch(japaneseUiProvider);
+    final amoledAccentHex = ref.watch(amoledAccentHexProvider);
+    // Rebuild the routed widget tree when display titles are switched.
+    ref.watch(japaneseTitlesProvider);
 
     // Force removal of splash screen after everything loads.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      await _precacheImages(context);
       FlutterNativeSplash.remove();
+      // Do not keep the first usable frame behind the native splash while
+      // optional artwork is decoded. Cached images still warm up afterward.
+      _precacheImages(context);
     });
 
     // Assigning an emergency globally-shared state reader.
     ref_ = ref;
+
+    final amoledAccent = _colorFromHex(amoledAccentHex) ?? theme.secondary;
+    final accent = theme.isAmoled ? amoledAccent : theme.secondary;
+    final baseColorScheme = ColorScheme.fromSeed(
+      seedColor: theme.isAmoled ? amoledAccent : theme.seedColor,
+      primary: theme.primary,
+      secondary: accent,
+      tertiary: theme.tertiary,
+      brightness: theme.brightness,
+    );
+    final colorScheme =
+        theme.isAmoled
+            ? baseColorScheme.copyWith(surface: Colors.black)
+            : baseColorScheme;
 
     return MaterialApp.router(
       title: AppInfo.TITLE,
@@ -97,16 +128,25 @@ class App extends ConsumerWidget {
       theme: ThemeData(
         useMaterial3: true,
         brightness: theme.brightness,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: theme.seedColor,
-          primary: theme.primary,
-          secondary: theme.secondary,
-          tertiary: theme.tertiary,
-          brightness: theme.brightness,
+        colorScheme: colorScheme,
+        dividerColor: colorScheme.secondary.withAlpha(150),
+        scaffoldBackgroundColor: theme.isAmoled ? Colors.black : null,
+        canvasColor: theme.isAmoled ? Colors.black : null,
+        cardColor: theme.isAmoled ? Colors.black : null,
+        dialogTheme:
+            theme.isAmoled
+                ? const DialogThemeData(backgroundColor: Colors.black)
+                : null,
+        appBarTheme:
+            theme.isAmoled
+                ? const AppBarTheme(backgroundColor: Colors.black)
+                : null,
+        dividerTheme: DividerThemeData(
+          color: colorScheme.secondary.withAlpha(150),
         ),
-        dividerColor: theme.tertiary.withAlpha(150),
-        dividerTheme: DividerThemeData(color: theme.tertiary.withAlpha(150)),
-        progressIndicatorTheme: ProgressIndicatorThemeData(color: theme.secondary),
+        progressIndicatorTheme: ProgressIndicatorThemeData(
+          color: colorScheme.secondary,
+        ),
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
             TargetPlatform.android: GoTransitions.fadeUpwards,
@@ -119,6 +159,7 @@ class App extends ConsumerWidget {
           displayColor: theme.tertiary,
         ),
       ),
+      locale: japaneseUi ? const Locale('ja') : const Locale('en'),
       //
       // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       //
@@ -129,5 +170,11 @@ class App extends ConsumerWidget {
       // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       //
     );
+  }
+
+  Color? _colorFromHex(String value) {
+    final normalized = value.trim().replaceFirst('#', '');
+    if (!RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(normalized)) return null;
+    return Color(int.parse('FF$normalized', radix: 16));
   }
 }

@@ -36,7 +36,8 @@ class RandomPreviewImage extends ConsumerWidget {
               debugPrint(error.toString());
               return const GenericErrorImage();
             },
-            placeholder: (_, _) => const Center(child: CircularProgressIndicator()),
+            placeholder:
+                (_, _) => const Center(child: CircularProgressIndicator()),
             maxHeightDiskCache: (isCensor(ref)) ? 15 : null,
             maxWidthDiskCache: (isCensor(ref)) ? 15 : null,
           ),
@@ -44,7 +45,7 @@ class RandomPreviewImage extends ConsumerWidget {
         Align(
           alignment: Alignment.bottomCenter,
           child: VnItemDetailTitlePlus(
-            title: p1.title,
+            title: p1.displayTitle,
             desc: p1.description ?? "No description",
             additionalWidget: RandomPreviewButtons(p1: p1),
           ),

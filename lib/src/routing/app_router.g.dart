@@ -19,9 +19,13 @@ final class GoRouterProvider
         retry: null,
         name: r'goRouterProvider',
         isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
+        dependencies: const <ProviderOrFamily>[sharedPrefProvider],
+        $allTransitiveDependencies: const <ProviderOrFamily>[
+          GoRouterProvider.$allTransitiveDependencies0,
+        ],
       );
+
+  static const $allTransitiveDependencies0 = sharedPrefProvider;
 
   @override
   String debugGetCreateSourceHash() => _$goRouterHash();
@@ -45,7 +49,7 @@ final class GoRouterProvider
   }
 }
 
-String _$goRouterHash() => r'c85352b9ce74763acb64b5feadef3913a3028af9';
+String _$goRouterHash() => r'1d71adefa1b512dfd46ead8b83e147401e91412e';
 
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vndb_lite/src/core/app/navigation.dart';
+import 'package:vndb_lite/src/core/local_db/shared_prefs.dart';
+import 'package:vndb_lite/src/constants/local_db_constants.dart';
 import 'package:vndb_lite/src/features/_base/presentation/main_outer_layout.dart';
 import 'package:vndb_lite/src/features/about/presentation/about_screen.dart';
 import 'package:vndb_lite/src/features/collection/presentation/collection_screen.dart';
@@ -35,19 +37,30 @@ enum AppRoute {
   String get relPath => name;
 }
 
-@Riverpod(keepAlive: true)
+@Riverpod(keepAlive: true, dependencies: [sharedPref])
 GoRouter goRouter(Ref ref) {
+  const validTabs = {'home', 'search', 'collection', 'others'};
+  final startupTab = ref.read(sharedPrefProvider).getString(DBKeys.STARTUP_TAB);
+  final initialLocation =
+      validTabs.contains(startupTab)
+          ? (startupTab == 'home' ? '/' : '/$startupTab')
+          : '/';
+
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: initialLocation,
     debugLogDiagnostics: !kReleaseMode,
     navigatorKey: NavigationService.navigatorKey,
     redirect: null,
     routes: [
       StatefulShellRoute.indexedStack(
-        builder: (_, state, navigationShell) => MainOuterLayout(navigationShell: navigationShell),
+        builder:
+            (_, state, navigationShell) =>
+                MainOuterLayout(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(debugLabel: AppRoute.home.name),
+            navigatorKey: GlobalKey<NavigatorState>(
+              debugLabel: AppRoute.home.name,
+            ),
             routes: [
               GoRoute(
                 path: '/',
@@ -57,7 +70,9 @@ GoRouter goRouter(Ref ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(debugLabel: AppRoute.search.name),
+            navigatorKey: GlobalKey<NavigatorState>(
+              debugLabel: AppRoute.search.name,
+            ),
             routes: [
               GoRoute(
                 path: AppRoute.search.path,
@@ -67,7 +82,9 @@ GoRouter goRouter(Ref ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(debugLabel: AppRoute.collection.name),
+            navigatorKey: GlobalKey<NavigatorState>(
+              debugLabel: AppRoute.collection.name,
+            ),
             routes: [
               GoRoute(
                 path: AppRoute.collection.path,
@@ -79,7 +96,9 @@ GoRouter goRouter(Ref ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(debugLabel: AppRoute.others.name),
+            navigatorKey: GlobalKey<NavigatorState>(
+              debugLabel: AppRoute.others.name,
+            ),
             routes: [
               GoRoute(
                 path: AppRoute.others.path,

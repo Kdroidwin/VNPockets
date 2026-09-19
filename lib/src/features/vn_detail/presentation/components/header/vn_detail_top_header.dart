@@ -39,7 +39,11 @@ class VnDetailsTopHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        VnDetailTopHeaderCover(p1: p1, p2: p2, animationController: animationController),
+        VnDetailTopHeaderCover(
+          p1: p1,
+          p2: p2,
+          animationController: animationController,
+        ),
         Flexible(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,10 +52,12 @@ class VnDetailsTopHeader extends StatelessWidget {
               // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
               // Title
               Container(
-                constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).width * 0.3),
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).width * 0.3,
+                ),
                 child: SingleChildScrollView(
                   child: Text(
-                    p1.title,
+                    p1.displayTitle,
                     style: TextStyle(
                       fontSize: responsiveUI.own(0.05),
                       fontWeight: FontWeight.bold,

@@ -20,6 +20,11 @@ class SettingsGeneralState extends _$SettingsGeneralState {
       maxItemPerRowLandscape: _maxItemPerRowLandscape,
       homeSectionsArrangement: _homeSectionsArrangement,
       collectionStatusTabArrangement: _collectionStatusTabArrangement,
+      startupTab: _startupTab,
+      showCollectionItemLabels: _showCollectionItemLabels,
+      groupCollectionByDeveloper: _groupCollectionByDeveloper,
+      showCollectionCoverDates: _showCollectionCoverDates,
+      showCollectionDeveloperHeaders: _showCollectionDeveloperHeaders,
     );
   }
 
@@ -58,7 +63,9 @@ class SettingsGeneralState extends _$SettingsGeneralState {
 
   int get _maxItemPerRowPortrait {
     final sharedPref = ref.read(sharedPrefProvider);
-    final int? maxItem = sharedPref.getInt(DBKeys.MAX_ITEMS_PER_ROW_PORTRAIT_CONF);
+    final int? maxItem = sharedPref.getInt(
+      DBKeys.MAX_ITEMS_PER_ROW_PORTRAIT_CONF,
+    );
 
     // Validate
     if (maxItem != null && maxItem >= 2) {
@@ -70,7 +77,9 @@ class SettingsGeneralState extends _$SettingsGeneralState {
 
   int get _maxItemPerRowLandscape {
     final sharedPref = ref.read(sharedPrefProvider);
-    final int? maxItem = sharedPref.getInt(DBKeys.MAX_ITEMS_PER_ROW_LANDSCAPE_CONF);
+    final int? maxItem = sharedPref.getInt(
+      DBKeys.MAX_ITEMS_PER_ROW_LANDSCAPE_CONF,
+    );
 
     // Validate
     if (maxItem != null && maxItem >= 4) {
@@ -82,13 +91,17 @@ class SettingsGeneralState extends _$SettingsGeneralState {
 
   List<HomeSectionsCode> get _homeSectionsArrangement {
     final sharedPref = ref.read(sharedPrefProvider);
-    final List<String>? arrangement = sharedPref.getStringList(DBKeys.HOME_ARRANGEMENT);
+    final List<String>? arrangement = sharedPref.getStringList(
+      DBKeys.HOME_ARRANGEMENT,
+    );
 
     // Validate
     if (arrangement != null &&
         arrangement.isNotEmpty &&
         arrangement.length >= HomeSectionsCode.values.length) {
-      return arrangement.map((code) => HomeSectionsCode.values.byName(code)).toList();
+      return arrangement
+          .map((code) => HomeSectionsCode.values.byName(code))
+          .toList();
     }
 
     return Default.HOME_SECTION_ARRANGEMENT;
@@ -96,7 +109,9 @@ class SettingsGeneralState extends _$SettingsGeneralState {
 
   List<String> get _collectionStatusTabArrangement {
     final sharedPref = ref.read(sharedPrefProvider);
-    final List<String>? arrangement = sharedPref.getStringList(DBKeys.COLLECTION_ARRANGEMENT);
+    final List<String>? arrangement = sharedPref.getStringList(
+      DBKeys.COLLECTION_ARRANGEMENT,
+    );
 
     // Validate
     if (arrangement != null &&
@@ -107,6 +122,36 @@ class SettingsGeneralState extends _$SettingsGeneralState {
 
     return Default.COLLECTION_STATUS_TAB_ARRANGEMENT;
   }
+
+  String get _startupTab {
+    const validTabs = {'home', 'search', 'collection', 'others'};
+    final tab = ref.read(sharedPrefProvider).getString(DBKeys.STARTUP_TAB);
+    return validTabs.contains(tab) ? tab! : 'home';
+  }
+
+  bool get _showCollectionItemLabels =>
+      ref
+          .read(sharedPrefProvider)
+          .getBool(DBKeys.SHOW_COLLECTION_ITEM_LABELS) ??
+      true;
+
+  bool get _groupCollectionByDeveloper =>
+      ref
+          .read(sharedPrefProvider)
+          .getBool(DBKeys.GROUP_COLLECTION_BY_DEVELOPER) ??
+      false;
+
+  bool get _showCollectionCoverDates =>
+      ref
+          .read(sharedPrefProvider)
+          .getBool(DBKeys.SHOW_COLLECTION_COVER_DATES) ??
+      true;
+
+  bool get _showCollectionDeveloperHeaders =>
+      ref
+          .read(sharedPrefProvider)
+          .getBool(DBKeys.SHOW_COLLECTION_DEVELOPER_HEADERS) ??
+      true;
 
   set showChart(bool value) {
     final sharedPref = ref.read(sharedPrefProvider);
@@ -165,5 +210,38 @@ class SettingsGeneralState extends _$SettingsGeneralState {
     sharedPref.reload();
 
     state = state.copyWith(collectionStatusTabArrangement: value);
+  }
+
+  set startupTab(String value) {
+    ref.read(sharedPrefProvider).setString(DBKeys.STARTUP_TAB, value);
+    state = state.copyWith(startupTab: value);
+  }
+
+  set showCollectionItemLabels(bool value) {
+    ref
+        .read(sharedPrefProvider)
+        .setBool(DBKeys.SHOW_COLLECTION_ITEM_LABELS, value);
+    state = state.copyWith(showCollectionItemLabels: value);
+  }
+
+  set groupCollectionByDeveloper(bool value) {
+    ref
+        .read(sharedPrefProvider)
+        .setBool(DBKeys.GROUP_COLLECTION_BY_DEVELOPER, value);
+    state = state.copyWith(groupCollectionByDeveloper: value);
+  }
+
+  set showCollectionCoverDates(bool value) {
+    ref
+        .read(sharedPrefProvider)
+        .setBool(DBKeys.SHOW_COLLECTION_COVER_DATES, value);
+    state = state.copyWith(showCollectionCoverDates: value);
+  }
+
+  set showCollectionDeveloperHeaders(bool value) {
+    ref
+        .read(sharedPrefProvider)
+        .setBool(DBKeys.SHOW_COLLECTION_DEVELOPER_HEADERS, value);
+    state = state.copyWith(showCollectionDeveloperHeaders: value);
   }
 }

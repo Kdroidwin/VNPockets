@@ -1,4 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,15 +11,40 @@ import 'package:vndb_lite/src/app.dart';
 import 'package:vndb_lite/src/util/responsive.dart';
 import 'package:vndb_lite/src/util/context_shortcut.dart';
 import 'package:vndb_lite/src/routing/app_router.dart';
+import 'package:vndb_lite/src/constants/local_db_constants.dart';
+import 'package:vndb_lite/src/core/local_db/shared_prefs.dart';
+import 'package:vndb_lite/src/features/vn/domain/p1.dart';
+import 'package:vndb_lite/src/util/alt_provider_reader.dart';
 
 class VnDetailAppBar extends StatelessWidget {
-  const VnDetailAppBar({super.key, required this.vnId});
+  const VnDetailAppBar({super.key, required this.p1});
 
-  final String vnId;
+  final VnDataPhase01 p1;
+
+  Future<void> _chooseCover() async {
+    final image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 95,
+    );
+    if (image == null) return;
+    final directory = await getApplicationDocumentsDirectory();
+    final extension = image.path.split('.').last;
+    final destination = File(
+      '${directory.path}/vnpockets_cover_${p1.id}.$extension',
+    );
+    await File(image.path).copy(destination.path);
+    await ref_
+        .read(sharedPrefProvider)
+        .setString('${DBKeys.CUSTOM_COVER_PATH}${p1.id}', destination.path);
+  }
+
+  Future<void> _clearCover() => ref_
+      .read(sharedPrefProvider)
+      .remove('${DBKeys.CUSTOM_COVER_PATH}${p1.id}');
 
   @override
   Widget build(BuildContext context) {
-    final vnUrl = Uri.parse('https://vndb.org/$vnId');
+    final vnUrl = Uri.parse('https://vndb.org/${p1.id}');
 
     return SliverAppBar(
       snap: true,
@@ -78,6 +108,40 @@ class VnDetailAppBar extends StatelessWidget {
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         //
         const Spacer(),
+        PopupMenuButton<String>(
+          tooltip: 'Copy & cover options',
+          icon: Icon(Icons.more_vert, color: kColor(context).tertiary),
+          onSelected: (value) async {
+            switch (value) {
+              case 'copyTitle':
+                await Clipboard.setData(ClipboardData(text: p1.displayTitle));
+              case 'copyDescription':
+                await Clipboard.setData(
+                  ClipboardData(text: p1.description ?? ''),
+                );
+              case 'chooseCover':
+                await _chooseCover();
+              case 'clearCover':
+                await _clearCover();
+            }
+          },
+          itemBuilder:
+              (_) => const [
+                PopupMenuItem(value: 'copyTitle', child: Text('Copy title')),
+                PopupMenuItem(
+                  value: 'copyDescription',
+                  child: Text('Copy description'),
+                ),
+                PopupMenuItem(
+                  value: 'chooseCover',
+                  child: Text('Choose custom cover image'),
+                ),
+                PopupMenuItem(
+                  value: 'clearCover',
+                  child: Text('Remove custom cover image'),
+                ),
+              ],
+        ),
         //
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // Share button

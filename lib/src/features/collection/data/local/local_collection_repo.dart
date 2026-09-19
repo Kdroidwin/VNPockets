@@ -8,6 +8,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vndb_lite/src/constants/local_db_constants.dart';
 import 'package:vndb_lite/src/core/local_db/shared_prefs.dart';
+import 'package:vndb_lite/src/features/collection/data/collection_status_data.dart';
 import 'package:vndb_lite/src/features/collection/domain/record.dart';
 import 'package:vndb_lite/src/features/home/data/local/local_home_repo.dart';
 
@@ -32,11 +33,16 @@ class LocalCollectionRepo {
 
     if (sectionRange == null) {
       // TODO do this more.
-      throw Exception('Bad sectionRange. Please check the typical vn id (e.g v12345).');
+      throw Exception(
+        'Bad sectionRange. Please check the typical vn id (e.g v12345).',
+      );
     }
 
     final List<String> collection =
-        _sharedPref.getStringList('${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange') ?? [];
+        _sharedPref.getStringList(
+          '${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange',
+        ) ??
+        [];
 
     // In order to prevent duplication, if vn record exists, then remove first.
     collection.removeWhere((record) => record.contains('"${vnRecord.id}"'));
@@ -44,7 +50,9 @@ class LocalCollectionRepo {
     // ! Breaking change for version > 2.0.0, assign lastmod property for VN record.
     collection.add(
       vnRecord
-          .copyWith(lastmod: (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString())
+          .copyWith(
+            lastmod: (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
+          )
           .toJson(),
     );
 
@@ -67,14 +75,22 @@ class LocalCollectionRepo {
     final int? sectionRange = getSectionFromId(vnId);
 
     if (sectionRange == null) {
-      throw Exception('Bad sectionRange. Please check the typical vn id (e.g v12345).');
+      throw Exception(
+        'Bad sectionRange. Please check the typical vn id (e.g v12345).',
+      );
     }
 
     // If section never exists, just ignore it.
-    if (!_sharedPref.containsKey('${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange')) return;
+    if (!_sharedPref.containsKey(
+      '${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange',
+    ))
+      return;
 
     final List<String> collection =
-        _sharedPref.getStringList('${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange') ?? [];
+        _sharedPref.getStringList(
+          '${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange',
+        ) ??
+        [];
 
     collection.removeWhere((vnRecord) => vnRecord.contains('"$vnId"'));
 
@@ -101,7 +117,9 @@ class LocalCollectionRepo {
 
       // If a section found have nothing inside, then delete the section.
       if (vnInCollection == null) {
-        await _sharedPref.remove('${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange');
+        await _sharedPref.remove(
+          '${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange',
+        );
         currentSectionRangeLists.remove('$sectionRange');
       }
       //
@@ -110,7 +128,10 @@ class LocalCollectionRepo {
       currentSectionRangeLists.add('$sectionRange');
     }
 
-    await _sharedPref.setStringList(DBKeys.SAVED_COLLECTION_SECTIONS, currentSectionRangeLists);
+    await _sharedPref.setStringList(
+      DBKeys.SAVED_COLLECTION_SECTIONS,
+      currentSectionRangeLists,
+    );
   }
 
   //
@@ -121,7 +142,9 @@ class LocalCollectionRepo {
     final int? sectionRange = getSectionFromId(vnId);
     final List<String> collection = getVnRecordsFromSection('$sectionRange');
 
-    final rawVnRecord = collection.firstWhereOrNull((savedVn) => savedVn.contains('"$vnId"'));
+    final rawVnRecord = collection.firstWhereOrNull(
+      (savedVn) => savedVn.contains('"$vnId"'),
+    );
 
     if (rawVnRecord == null) return null;
     return VnRecord.fromMap(json.decode(rawVnRecord));
@@ -135,7 +158,9 @@ class LocalCollectionRepo {
     final int vnRecordsPerSection = 100;
 
     // Expected raw vnId is one letter prefix, the rest are numbers. (v34522)
-    final int? extractedVnId = int.tryParse(vnId.toLowerCase().replaceAll("v", ""));
+    final int? extractedVnId = int.tryParse(
+      vnId.toLowerCase().replaceAll("v", ""),
+    );
     if (extractedVnId == null) return null;
 
     // (~/) is dart's floor division operator syntax, not to confuse with (%) modulo.
@@ -154,7 +179,10 @@ class LocalCollectionRepo {
   //
 
   List<String> getVnRecordsFromSection(String sectionRange) {
-    return _sharedPref.getStringList('${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange') ?? [];
+    return _sharedPref.getStringList(
+          '${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange',
+        ) ??
+        [];
   }
 
   //
@@ -162,11 +190,14 @@ class LocalCollectionRepo {
   //
 
   List<String> get rawAllRecords {
-    final collectionSections = _sharedPref.getStringList(DBKeys.SAVED_COLLECTION_SECTIONS) ?? [];
+    final collectionSections =
+        _sharedPref.getStringList(DBKeys.SAVED_COLLECTION_SECTIONS) ?? [];
     List<String> fullCollectionList = [];
 
     for (String sectionRange in collectionSections) {
-      final List<String> collectionPerSection = getVnRecordsFromSection(sectionRange);
+      final List<String> collectionPerSection = getVnRecordsFromSection(
+        sectionRange,
+      );
 
       // Appending the previous results.
       if (collectionPerSection.isNotEmpty) {
@@ -197,11 +228,16 @@ class LocalCollectionRepo {
     }
 
     final collectionSections =
-        _sharedPref.getStringList(DBKeys.SAVED_COLLECTION_SECTIONS) ?? <String>[];
+        _sharedPref.getStringList(DBKeys.SAVED_COLLECTION_SECTIONS) ??
+        <String>[];
     for (String sectionRange in collectionSections) {
       //
-      if (_sharedPref.containsKey('${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange')) {
-        await _sharedPref.remove('${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange');
+      if (_sharedPref.containsKey(
+        '${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange',
+      )) {
+        await _sharedPref.remove(
+          '${DBKeys.SAVED_COLLECTION_OF_SECTION_V}$sectionRange',
+        );
       }
     }
 
@@ -218,7 +254,8 @@ class LocalCollectionRepo {
   }
 
   Future<void> setVnToBeRemovedWhenSync(List<String> vnId) async {
-    List<String> vns = _sharedPref.getStringList(DBKeys.VN_RECORDS_TO_BE_REMOVED) ?? [];
+    List<String> vns =
+        _sharedPref.getStringList(DBKeys.VN_RECORDS_TO_BE_REMOVED) ?? [];
     vns = [...vns, ...vnId];
 
     await _sharedPref.setStringList(DBKeys.VN_RECORDS_TO_BE_REMOVED, vns);
@@ -226,6 +263,53 @@ class LocalCollectionRepo {
 
   List<String> getVnToBeRemovedWhenSync() {
     return _sharedPref.getStringList(DBKeys.VN_RECORDS_TO_BE_REMOVED) ?? [];
+  }
+
+  /// Returns the user-defined order for one collection status tab.
+  List<String> getCustomOrder(String status) =>
+      _sharedPref.getStringList('${DBKeys.COLLECTION_CUSTOM_ORDER}$status') ??
+      [];
+
+  /// Saves only IDs, keeping custom display order local and independent from
+  /// VNDB synchronization data.
+  Future<void> saveCustomOrder(String status, List<String> ids) => _sharedPref
+      .setStringList('${DBKeys.COLLECTION_CUSTOM_ORDER}$status', ids);
+
+  Map<String, dynamic> exportBackup() => {
+    'format': 'vnpockets-collection-backup',
+    'version': 1,
+    'records': rawAllRecords,
+    'customOrders': {
+      for (final status in CollectionStatusCode.values)
+        status.name: getCustomOrder(status.name),
+    },
+  };
+
+  Future<int> importBackup(Map<String, dynamic> backup) async {
+    if (backup['format'] != 'vnpockets-collection-backup' ||
+        backup['records'] is! List) {
+      throw const FormatException('This is not a VNPockets collection backup.');
+    }
+    var count = 0;
+    for (final raw in backup['records'] as List) {
+      if (raw is String) {
+        await saveVnRecord(VnRecord.fromJson(raw));
+        count++;
+      }
+    }
+    final orders = backup['customOrders'];
+    if (orders is Map) {
+      for (final status in CollectionStatusCode.values) {
+        final values = orders[status.name];
+        if (values is List) {
+          await saveCustomOrder(
+            status.name,
+            values.whereType<String>().toList(),
+          );
+        }
+      }
+    }
+    return count;
   }
 
   //
@@ -240,7 +324,8 @@ class LocalCollectionRepo {
   /// to not conflict with VNs that are added by synchronizing from the
   /// cloud.
   Future<void> setAddedViaAppNotBySync(List<String> vnId) async {
-    List<String> vns = _sharedPref.getStringList(DBKeys.VN_RECORDS_ADDED_BY_APP) ?? [];
+    List<String> vns =
+        _sharedPref.getStringList(DBKeys.VN_RECORDS_ADDED_BY_APP) ?? [];
     vns = [...vns, ...vnId];
 
     await _sharedPref.setStringList(DBKeys.VN_RECORDS_ADDED_BY_APP, vns);
@@ -270,9 +355,13 @@ class LocalCollectionRepo {
   // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   //
 
-  Future<List<VnRecord>> getAllRecords([List<String>? partialCollection]) async {
+  Future<List<VnRecord>> getAllRecords([
+    List<String>? partialCollection,
+  ]) async {
     final List<String> dbCollection = partialCollection ?? rawAllRecords;
-    return [for (String rawRecord in dbCollection) VnRecord.fromJson(rawRecord)];
+    return [
+      for (String rawRecord in dbCollection) VnRecord.fromJson(rawRecord),
+    ];
   }
 
   //
