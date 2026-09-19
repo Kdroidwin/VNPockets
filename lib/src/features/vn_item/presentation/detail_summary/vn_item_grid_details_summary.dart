@@ -24,10 +24,12 @@ class VnItemGridDetailsSummary extends ConsumerStatefulWidget {
   final VoidCallback toggleVnDetailSummary;
 
   @override
-  ConsumerState<VnItemGridDetailsSummary> createState() => _VnItemGridDetailsSummaryState();
+  ConsumerState<VnItemGridDetailsSummary> createState() =>
+      _VnItemGridDetailsSummaryState();
 }
 
-class _VnItemGridDetailsSummaryState extends ConsumerState<VnItemGridDetailsSummary>
+class _VnItemGridDetailsSummaryState
+    extends ConsumerState<VnItemGridDetailsSummary>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animationController;
   late final Animation<Offset> _offsetAnimation;
@@ -42,7 +44,9 @@ class _VnItemGridDetailsSummaryState extends ConsumerState<VnItemGridDetailsSumm
 
     _offsetAnimation = _animationController
         .drive(CurveTween(curve: Curves.easeInOut))
-        .drive(Tween<Offset>(begin: const Offset(1, 0), end: const Offset(0, 0)));
+        .drive(
+          Tween<Offset>(begin: const Offset(1, 0), end: const Offset(0, 0)),
+        );
   }
 
   @override
@@ -74,13 +78,20 @@ class _VnItemGridDetailsSummaryState extends ConsumerState<VnItemGridDetailsSumm
     required content,
     bool useHighlight = false,
   }) {
-    assert(content is! Widget || content is! String, "Content must be either string or widget.");
+    assert(
+      content is! Widget || content is! String,
+      "Content must be either string or widget.",
+    );
 
     return Wrap(
       alignment: WrapAlignment.start,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Icon(icon, size: responsiveUI.own(0.038), color: kColor(context).secondary),
+        Icon(
+          icon,
+          size: responsiveUI.own(0.038),
+          color: kColor(context).secondary,
+        ),
         ShadowText(title),
         (content is String)
             ? ShadowText(
@@ -136,7 +147,10 @@ class _VnItemGridDetailsSummaryState extends ConsumerState<VnItemGridDetailsSumm
                       ],
                     ),
                     child: SingleChildScrollView(
-                      child: ShadowText(widget.p1.title, fontSize: responsiveUI.own(0.0385)),
+                      child: ShadowText(
+                        widget.p1.displayTitle,
+                        fontSize: responsiveUI.own(0.0385),
+                      ),
                     ),
                   ),
                   Expanded(
@@ -146,7 +160,9 @@ class _VnItemGridDetailsSummaryState extends ConsumerState<VnItemGridDetailsSumm
                         children: [
                           Consumer(
                             builder: (context, ref, child) {
-                              final vnRecord = ref.watch(vnRecordStateProvider(widget.p1.id));
+                              final vnRecord = ref.watch(
+                                vnRecordStateProvider(widget.p1.id),
+                              );
 
                               if (vnRecord == null) {
                                 return const SizedBox.shrink();
@@ -161,7 +177,9 @@ class _VnItemGridDetailsSummaryState extends ConsumerState<VnItemGridDetailsSumm
                                   detailSummary(
                                     icon: Icons.library_books,
                                     title: ' Status: ',
-                                    content: toBeginningOfSentenceCase<String>(vnRecord.status),
+                                    content: toBeginningOfSentenceCase<String>(
+                                      vnRecord.status,
+                                    ),
                                     useHighlight: true,
                                   ),
                                   //
@@ -184,7 +202,9 @@ class _VnItemGridDetailsSummaryState extends ConsumerState<VnItemGridDetailsSumm
                             icon: Icons.public,
                             title: ' Origin: ',
                             content: Padding(
-                              padding: EdgeInsets.only(left: responsiveUI.own(0.005)),
+                              padding: EdgeInsets.only(
+                                left: responsiveUI.own(0.005),
+                              ),
                               child: Image.asset(
                                 LangData.getFlagPath(widget.p1.olang ?? ""),
                                 height: responsiveUI.own(0.038),
@@ -199,7 +219,9 @@ class _VnItemGridDetailsSummaryState extends ConsumerState<VnItemGridDetailsSumm
                           detailSummary(
                             icon: Icons.star,
                             title: ' Rating: ',
-                            content: (widget.p1.rating! / 10).toStringAsFixed(2),
+                            content: (widget.p1.rating! / 10).toStringAsFixed(
+                              2,
+                            ),
                           ),
                           //
                           // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -228,7 +250,9 @@ class _VnItemGridDetailsSummaryState extends ConsumerState<VnItemGridDetailsSumm
                           //
                           // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                           // Description
-                          ShadowText('\nDescription: \n${widget.p1.description ?? '--'}'),
+                          ShadowText(
+                            '\nDescription: \n${widget.p1.description ?? '--'}',
+                          ),
                         ],
                       ),
                     ),

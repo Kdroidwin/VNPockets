@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -5,6 +7,8 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:vndb_lite/src/app.dart';
+import 'package:vndb_lite/src/constants/local_db_constants.dart';
+import 'package:vndb_lite/src/core/local_db/shared_prefs.dart';
 import 'package:vndb_lite/src/common_widgets/generic_image_error.dart';
 import 'package:vndb_lite/src/features/settings/presentation/settings_general_state.dart';
 import 'package:vndb_lite/src/features/vn/domain/others.dart';
@@ -51,6 +55,7 @@ class _VnItemGridCoverState extends State<VnItemGridCover> {
   late final String? _coverUrl;
   late final bool _hasCover;
   late final String _blurId;
+  String? _customCoverPath;
 
   bool _isSystematicallyCensored = false;
 
@@ -60,6 +65,9 @@ class _VnItemGridCoverState extends State<VnItemGridCover> {
     _coverUrl = widget.image?.thumbnail;
     _hasCover = widget.image != null && _coverUrl != null;
     _blurId = widget.vnId + widget.labelCode + App.currentRoute;
+    _customCoverPath = ref_
+        .read(sharedPrefProvider)
+        .getString('${DBKeys.CUSTOM_COVER_PATH}${widget.vnId}');
 
     if (_hasCover) {
       final settings = ref_.read(settingsGeneralStateProvider);
@@ -82,7 +90,8 @@ class _VnItemGridCoverState extends State<VnItemGridCover> {
   }
 
   bool get _vnMatchCensorRequirement {
-    return (widget.image?.sexual ?? 0) >= 1 || (widget.image?.violence ?? 0) >= 1;
+    return (widget.image?.sexual ?? 0) >= 1 ||
+        (widget.image?.violence ?? 0) >= 1;
   }
 
   @override
@@ -90,7 +99,8 @@ class _VnItemGridCoverState extends State<VnItemGridCover> {
     final cover = Consumer(
       builder: (context, ref, child) {
         final isCensor =
-            ref.watch(vnItemGridCoverCensorNotifierProvider(_blurId)) ?? _isSystematicallyCensored;
+            ref.watch(vnItemGridCoverCensorNotifierProvider(_blurId)) ??
+            _isSystematicallyCensored;
 
         // return FutureBuilder(
         //   future: CustomCacheManager().getSingleFile(widget.image!.thumbnail!),
@@ -102,13 +112,26 @@ class _VnItemGridCoverState extends State<VnItemGridCover> {
         //   },
         // );
 
+        if (_customCoverPath != null && File(_customCoverPath!).existsSync()) {
+          return Image.file(
+            File(_customCoverPath!),
+            width: widget.isGridView ? double.infinity : null,
+            height:
+                widget.isGridView ? null : VnItemGridCover.nonGridViewHeight,
+            fit: BoxFit.cover,
+          );
+        }
+
         return CachedNetworkImage(
           imageUrl: (_hasCover) ? (_coverUrl ?? '') : '',
           width: (widget.isGridView) ? double.infinity : null,
-          height: (widget.isGridView) ? null : VnItemGridCover.nonGridViewHeight,
+          height:
+              (widget.isGridView) ? null : VnItemGridCover.nonGridViewHeight,
           placeholder:
               (_, _) => SizedBox.square(
-                dimension: VnItemGridCover.sizes[widget.vnId] ?? VnItemGridCover.placeHolderSize,
+                dimension:
+                    VnItemGridCover.sizes[widget.vnId] ??
+                    VnItemGridCover.placeHolderSize,
               ),
           fit: BoxFit.cover,
           errorWidget: (_, url, error) => const GenericErrorImage(),
@@ -130,7 +153,8 @@ class _VnItemGridCoverState extends State<VnItemGridCover> {
     // * stuttering in a gridview.
     if (widget.isGridView &&
         VnItemGridCover.placeHolderSize ==
-            (VnItemGridCover.sizes[widget.vnId] ?? VnItemGridCover.placeHolderSize)) {
+            (VnItemGridCover.sizes[widget.vnId] ??
+                VnItemGridCover.placeHolderSize)) {
       return VisibilityDetector(
         key: Key(widget.vnId),
         onVisibilityChanged: (VisibilityInfo info) {

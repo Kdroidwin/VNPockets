@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:vndb_lite/src/common_widgets/custom_label.dart';
 import 'package:vndb_lite/src/common_widgets/generic_shadowy_text.dart';
 import 'package:vndb_lite/src/features/sort_filter/presentation/local/local_sort_filter_controller.dart';
+import 'package:vndb_lite/src/features/sort_filter/data/sortable_data.dart';
 import 'package:vndb_lite/src/util/responsive.dart';
 import 'package:vndb_lite/src/features/_base/presentation/upper_parts/buttons/refresh_button.dart';
 import 'package:vndb_lite/src/features/collection/presentation/collection_content_controller.dart';
@@ -35,7 +36,9 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
 
     _offsetAnimation = _animationController
         .drive(CurveTween(curve: Curves.easeInOut))
-        .drive(Tween<Offset>(begin: const Offset(0, -0.5), end: const Offset(0, 0)));
+        .drive(
+          Tween<Offset>(begin: const Offset(0, -0.5), end: const Offset(0, 0)),
+        );
   }
 
   @override
@@ -58,9 +61,84 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
   //
 
   Future<void> _censorCoverSwitch() async {
-    final showCoverCensor = ref.read(settingsGeneralStateProvider).showCoverCensor;
-    ref.read(settingsGeneralStateProvider.notifier).showCoverCensor = !showCoverCensor;
+    final showCoverCensor =
+        ref.read(settingsGeneralStateProvider).showCoverCensor;
+    ref.read(settingsGeneralStateProvider.notifier).showCoverCensor =
+        !showCoverCensor;
 
+    await _refreshApp();
+  }
+
+  Future<void> _chooseStartupTab() async {
+    const tabs = <String, String>{
+      'home': 'Home',
+      'search': 'Search',
+      'collection': 'Collection',
+      'others': 'Others',
+    };
+    final selected = ref.read(settingsGeneralStateProvider).startupTab;
+    final tab = await showDialog<String>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Open on startup'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final entry in tabs.entries)
+                  RadioListTile<String>(
+                    value: entry.key,
+                    groupValue: selected,
+                    title: Text(entry.value),
+                    onChanged:
+                        (value) => Navigator.of(dialogContext).pop(value),
+                  ),
+              ],
+            ),
+          ),
+    );
+    if (tab != null)
+      ref.read(settingsGeneralStateProvider.notifier).startupTab = tab;
+  }
+
+  Future<void> _collectionLabelsSwitch() async {
+    final visible =
+        ref.read(settingsGeneralStateProvider).showCollectionItemLabels;
+    ref.read(settingsGeneralStateProvider.notifier).showCollectionItemLabels =
+        !visible;
+  }
+
+  void _collectionCoverDatesSwitch() {
+    final visible =
+        ref.read(settingsGeneralStateProvider).showCollectionCoverDates;
+    ref.read(settingsGeneralStateProvider.notifier).showCollectionCoverDates =
+        !visible;
+  }
+
+  void _collectionDeveloperHeadersSwitch() {
+    final visible =
+        ref.read(settingsGeneralStateProvider).showCollectionDeveloperHeaders;
+    ref
+        .read(settingsGeneralStateProvider.notifier)
+        .showCollectionDeveloperHeaders = !visible;
+  }
+
+  Future<void> _groupCollectionByDeveloperSwitch() async {
+    final enabled =
+        ref.read(settingsGeneralStateProvider).groupCollectionByDeveloper;
+    ref.read(settingsGeneralStateProvider.notifier).groupCollectionByDeveloper =
+        !enabled;
+    if (!enabled) {
+      final sortController = ref.read(localSortControllerProvider.notifier);
+      sortController.sort = SortableCode.released.name;
+      sortController.reverse = false;
+      await ref
+          .read(collectionContentControllerProvider.notifier)
+          .separateVNsByStatus(
+            ref.read(localFilterControllerProvider),
+            ref.read(localSortControllerProvider),
+          );
+    }
     await _refreshApp();
   }
 
@@ -77,7 +155,9 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
       child: ListTile(
         dense: true,
         tileColor: kColor(context).secondary.withOpacity(0.7),
-        contentPadding: EdgeInsets.symmetric(horizontal: responsiveUI.own(0.045)),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: responsiveUI.own(0.045),
+        ),
         trailing: Icon(
           Icons.format_list_bulleted,
           size: responsiveUI.own(0.05),
@@ -93,15 +173,17 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
   //
 
   Future<void> _arrangeCollectionTab() async {
-    final collectionStatusArrangement =
-        ref.read(settingsGeneralStateProvider).collectionStatusTabArrangement;
+    final collectionStatusArrangement = List<String>.from(
+      ref.read(settingsGeneralStateProvider).collectionStatusTabArrangement,
+    );
 
     await showSettingsDialog(
       title: 'Re-arrange Tab Collection',
       yesOrNo: true,
       yesFunction: () async {
-        ref.read(settingsGeneralStateProvider.notifier).collectionStatusTabArrangement =
-            collectionStatusArrangement;
+        ref
+            .read(settingsGeneralStateProvider.notifier)
+            .collectionStatusTabArrangement = collectionStatusArrangement;
 
         final filterData = ref.read(localFilterControllerProvider);
         final sortData = ref.read(localSortControllerProvider);
@@ -110,28 +192,36 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
             .separateVNsByStatus(filterData, sortData);
         await _refreshApp();
       },
-      content: Container(
-        width: double.maxFinite,
-        height:
-            collectionStatusArrangement.length * responsiveUI.own(0.13) + responsiveUI.own(0.035),
-        padding: EdgeInsets.only(top: responsiveUI.own(0.03)),
-        child: ReorderableListView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          itemBuilder: (ctx, idx) {
-            return _getDragAndDropItem(
-              key: collectionStatusArrangement[idx],
-              title: toBeginningOfSentenceCase<String>(collectionStatusArrangement[idx]),
-            );
-          },
-          itemCount: collectionStatusArrangement.length,
-          onReorder: (int oldItemIndex, int newItemIndex) {
-            setState(() {
-              var movedItem = collectionStatusArrangement.removeAt(oldItemIndex);
-              collectionStatusArrangement.insert(newItemIndex, movedItem);
-            });
-          },
-        ),
+      content: StatefulBuilder(
+        builder:
+            (context, setDialogState) => Container(
+              width: double.maxFinite,
+              height:
+                  collectionStatusArrangement.length * responsiveUI.own(0.13) +
+                  responsiveUI.own(0.035),
+              padding: EdgeInsets.only(top: responsiveUI.own(0.03)),
+              child: ReorderableListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemBuilder:
+                    (ctx, idx) => _getDragAndDropItem(
+                      key: collectionStatusArrangement[idx],
+                      title: toBeginningOfSentenceCase<String>(
+                        collectionStatusArrangement[idx],
+                      ),
+                    ),
+                itemCount: collectionStatusArrangement.length,
+                onReorder: (oldItemIndex, newItemIndex) {
+                  if (newItemIndex > oldItemIndex) newItemIndex--;
+                  setDialogState(() {
+                    final movedItem = collectionStatusArrangement.removeAt(
+                      oldItemIndex,
+                    );
+                    collectionStatusArrangement.insert(newItemIndex, movedItem);
+                  });
+                },
+              ),
+            ),
       ),
     );
   }
@@ -147,7 +237,8 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
       title: 'Home VN item previews count',
       yesOrNo: true,
       yesFunction: () async {
-        ref.read(settingsGeneralStateProvider.notifier).maxPreviewItem = maxPreviewItem;
+        ref.read(settingsGeneralStateProvider.notifier).maxPreviewItem =
+            maxPreviewItem;
         await _refreshApp();
       },
       content: Padding(
@@ -205,15 +296,19 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
   //
 
   Future<void> _vnItemsPerRow() async {
-    int valueIdxPortrait = ref.read(settingsGeneralStateProvider).maxItemPerRowPortrait;
-    int valueIdxLandscape = ref.read(settingsGeneralStateProvider).maxItemPerRowLandscape;
+    int valueIdxPortrait =
+        ref.read(settingsGeneralStateProvider).maxItemPerRowPortrait;
+    int valueIdxLandscape =
+        ref.read(settingsGeneralStateProvider).maxItemPerRowLandscape;
 
     await showSettingsDialog(
       title: 'VN item per row count',
       yesOrNo: true,
       yesFunction: () async {
-        ref.read(settingsGeneralStateProvider.notifier).maxItemPerRowPortrait = valueIdxPortrait;
-        ref.read(settingsGeneralStateProvider.notifier).maxItemPerRowLandscape = valueIdxLandscape;
+        ref.read(settingsGeneralStateProvider.notifier).maxItemPerRowPortrait =
+            valueIdxPortrait;
+        ref.read(settingsGeneralStateProvider.notifier).maxItemPerRowLandscape =
+            valueIdxLandscape;
         await _refreshApp();
       },
       content: SettingsItemPerRow(
@@ -244,7 +339,9 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
     return SlideTransition(
       position: _offsetAnimation,
       child: FadeTransition(
-        opacity: _animationController.drive(CurveTween(curve: Curves.easeInToLinear)),
+        opacity: _animationController.drive(
+          CurveTween(curve: Curves.easeInToLinear),
+        ),
         child: Container(
           alignment: Alignment.centerLeft,
           padding: EdgeInsets.all(responsiveUI.own(0.04)),
@@ -266,7 +363,8 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
                   ShadowText(
                     (settings.showCoverCensor) ? ' ON' : ' OFF',
                     fontWeight: FontWeight.bold,
-                    color: (settings.showCoverCensor) ? Colors.green : Colors.red,
+                    color:
+                        (settings.showCoverCensor) ? Colors.green : Colors.red,
                     shadows: [
                       Shadow(
                         color: Color.alphaBlend(
@@ -276,6 +374,71 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
                         blurRadius: 5,
                       ),
                     ],
+                  ),
+                ],
+              ),
+
+              if (settings.groupCollectionByDeveloper) ...[
+                SizedBox(height: responsiveUI.own(0.03)),
+                CustomLabel(
+                  useBorder: true,
+                  borderRadius: 12,
+                  isSelected: false,
+                  borderColor: kColor(context).secondary,
+                  padding: EdgeInsets.all(responsiveUI.own(0.02)),
+                  onTap: _collectionDeveloperHeadersSwitch,
+                  children: [
+                    ShadowText('Developer group names: '),
+                    ShadowText(
+                      settings.showCollectionDeveloperHeaders ? ' ON' : ' OFF',
+                      fontWeight: FontWeight.bold,
+                      color:
+                          settings.showCollectionDeveloperHeaders
+                              ? Colors.green
+                              : Colors.red,
+                    ),
+                  ],
+                ),
+              ],
+
+              SizedBox(height: responsiveUI.own(0.03)),
+              CustomLabel(
+                useBorder: true,
+                borderRadius: 12,
+                isSelected: false,
+                borderColor: kColor(context).secondary,
+                padding: EdgeInsets.all(responsiveUI.own(0.02)),
+                onTap: _collectionCoverDatesSwitch,
+                children: [
+                  ShadowText('Collection cover dates: '),
+                  ShadowText(
+                    settings.showCollectionCoverDates ? ' ON' : ' OFF',
+                    fontWeight: FontWeight.bold,
+                    color:
+                        settings.showCollectionCoverDates
+                            ? Colors.green
+                            : Colors.red,
+                  ),
+                ],
+              ),
+
+              SizedBox(height: responsiveUI.own(0.03)),
+              CustomLabel(
+                useBorder: true,
+                borderRadius: 12,
+                isSelected: false,
+                borderColor: kColor(context).secondary,
+                padding: EdgeInsets.all(responsiveUI.own(0.02)),
+                onTap: _groupCollectionByDeveloperSwitch,
+                children: [
+                  ShadowText('Group collection by developer: '),
+                  ShadowText(
+                    settings.groupCollectionByDeveloper ? ' ON' : ' OFF',
+                    fontWeight: FontWeight.bold,
+                    color:
+                        settings.groupCollectionByDeveloper
+                            ? Colors.green
+                            : Colors.red,
                   ),
                 ],
               ),
@@ -294,6 +457,45 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
                 children: [ShadowText('Arrange collection status tabs')],
               ),
 
+              SizedBox(height: responsiveUI.own(0.03)),
+              CustomLabel(
+                useBorder: true,
+                borderRadius: 12,
+                isSelected: false,
+                borderColor: kColor(context).secondary,
+                padding: EdgeInsets.all(responsiveUI.own(0.02)),
+                onTap: _chooseStartupTab,
+                children: [
+                  ShadowText('Open on startup: '),
+                  ShadowText(
+                    settings.startupTab[0].toUpperCase() +
+                        settings.startupTab.substring(1),
+                    color: kColor(context).tertiary.withAlpha(180),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: responsiveUI.own(0.03)),
+              CustomLabel(
+                useBorder: true,
+                borderRadius: 12,
+                isSelected: false,
+                borderColor: kColor(context).secondary,
+                padding: EdgeInsets.all(responsiveUI.own(0.02)),
+                onTap: _collectionLabelsSwitch,
+                children: [
+                  ShadowText('Collection cover labels: '),
+                  ShadowText(
+                    settings.showCollectionItemLabels ? ' ON' : ' OFF',
+                    fontWeight: FontWeight.bold,
+                    color:
+                        settings.showCollectionItemLabels
+                            ? Colors.green
+                            : Colors.red,
+                  ),
+                ],
+              ),
+
               //
               // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
               // Preview item count
@@ -309,7 +511,9 @@ class _SettingsGeneralState extends ConsumerState<SettingsGeneral>
                   ShadowText('Home VN item previews: '),
                   ShadowText(
                     // Because index starts at 0, and 0 is not valid
-                    (settings.maxPreviewItem != 20) ? '${settings.maxPreviewItem}' : 'Default (20)',
+                    (settings.maxPreviewItem != 20)
+                        ? '${settings.maxPreviewItem}'
+                        : 'Default (20)',
                     color: kColor(context).tertiary.withAlpha(180),
                   ),
                 ],

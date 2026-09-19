@@ -24,7 +24,10 @@ class SortVnCollection extends ConsumerWidget {
             onTap: () async {
               // Only change the order of sort conf if the sort already chosen and tapped again.
               if (sort.sort == sortCode) {
-                ref.read(localSortControllerProvider.notifier).reverse = !(sort.reverse ?? false);
+                if (sortCode != SortableCode.custom.name) {
+                  ref.read(localSortControllerProvider.notifier).reverse =
+                      !(sort.reverse ?? false);
+                }
                 //
               } else {
                 //

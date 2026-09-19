@@ -32,13 +32,16 @@ class VnItemGridDetails extends StatelessWidget {
           children: [
             if (withLabel) VnItemDetailLabel(p1: p1, labelCode: labelCode),
             const Spacer(),
-            VnItemDetailTitle(title: p1.title),
+            VnItemDetailTitle(title: p1.displayTitle),
           ],
         ),
         //
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // The (i) button
-        VnItemDetailStatusIndicator(id: p1.id, toggleVnDetailSummary: toggleVnDetailSummary),
+        VnItemDetailStatusIndicator(
+          id: p1.id,
+          toggleVnDetailSummary: toggleVnDetailSummary,
+        ),
         //
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // Multi-selection mode.
@@ -48,8 +51,11 @@ class VnItemGridDetails extends StatelessWidget {
           Consumer(
             builder: (context, ref, child) {
               if (App.isInCollectionScreen) {
-                final recordSelected = ref.watch(recordSelectedControllerProvider);
-                if (recordSelected.contains(p1.id)) return MultiSelectionIndicator(p1.id);
+                final recordSelected = ref.watch(
+                  recordSelectedControllerProvider,
+                );
+                if (recordSelected.contains(p1.id))
+                  return MultiSelectionIndicator(p1.id);
               }
 
               return const SizedBox.shrink();

@@ -97,27 +97,30 @@ class AppStartup {
 
     // * Show some error UI when any widget in the app fails to build
     ErrorWidget.builder = (FlutterErrorDetails details) {
-      return SizedBox(
-        height: double.maxFinite,
-        width: double.maxFinite,
-        child:
-            (kReleaseMode)
-                ? const Center(child: Text("(＃°Д°) s-something went wrong..."))
-                : Scaffold(
-                  appBar: AppBar(
-                    backgroundColor: Colors.red,
-                    title: const Text('An error occurred'),
-                  ),
-                  backgroundColor: Colors.white,
-                  body: SingleChildScrollView(
-                    padding: const EdgeInsets.all(8),
-                    child: Center(child: Text(details.toString()).wColor(Colors.black)),
-                  ),
-                ),
+      // This builder may be invoked before MaterialApp is built. Keep it
+      // independent of inherited Material/Directionality widgets so an error
+      // can never recurse and leave the native splash screen visible.
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: ColoredBox(
+          color: Colors.white,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                kReleaseMode
+                    ? '(＃°Д°) s-something went wrong...'
+                    : details.toString(),
+                style: const TextStyle(color: Colors.black),
+              ),
+            ),
+          ),
+        ),
       );
     };
   }
 
   @visibleForTesting
-  void registerErrorHandlers(ErrorLogger errorLogger) => _registerErrorHandlers(errorLogger);
+  void registerErrorHandlers(ErrorLogger errorLogger) =>
+      _registerErrorHandlers(errorLogger);
 }

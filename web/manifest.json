@@ -1,6 +1,6 @@
 {
-     "name": "VNDB Lite",
-     "short_name": "VNDB Lite",
+     "name": "VNPockets",
+     "short_name": "VNPockets",
      "start_url": ".",
      "display": "standalone",
      "background_color": "#0175C2",

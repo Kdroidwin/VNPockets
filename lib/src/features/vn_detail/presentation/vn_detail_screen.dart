@@ -57,7 +57,8 @@ class _VnDetailScreenState extends ConsumerState<VnDetailScreen>
   //
   // TODO remove this all in controller?
   bool get _vnHasCover {
-    return widget.p1.image?.thumbnail != null && widget.p1.image?.thumbnail != null;
+    return widget.p1.image?.thumbnail != null &&
+        widget.p1.image?.thumbnail != null;
   }
 
   bool get _coverNeedCensor {
@@ -73,7 +74,8 @@ class _VnDetailScreenState extends ConsumerState<VnDetailScreen>
   }
 
   bool get _vnMatchCensorRequirement {
-    return (widget.p1.image!.sexual ?? 0) >= 1 || (widget.p1.image!.violence ?? 0) >= 1;
+    return (widget.p1.image!.sexual ?? 0) >= 1 ||
+        (widget.p1.image!.violence ?? 0) >= 1;
   }
 
   //
@@ -104,14 +106,18 @@ class _VnDetailScreenState extends ConsumerState<VnDetailScreen>
   Widget _imgCover({required bool isCensor}) {
     final isNotSearch = !App.currentRootRoute.contains(AppRoute.search.name);
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+      ),
       child: CachedNetworkImage(
         imageUrl: (_vnHasCover) ? widget.p1.image!.thumbnail! : '',
         fit: BoxFit.cover,
         width: MediaQuery.sizeOf(context).width,
         placeholder:
-            (context, str) =>
-                SizedBox(width: responsiveUI.own(0.25), height: responsiveUI.own(0.4)),
+            (context, str) => SizedBox(
+              width: responsiveUI.own(0.25),
+              height: responsiveUI.own(0.4),
+            ),
         errorWidget: (context, url, error) => const GenericErrorImage(),
         cacheKey: "BG-${widget.p1.id}",
         cacheManager: (isNotSearch) ? CustomCacheManager() : null,
@@ -139,7 +145,9 @@ class _VnDetailScreenState extends ConsumerState<VnDetailScreen>
             GenericBackground(
               useGradientOverlay: true,
               imageWidget: FadeTransition(
-                opacity: _animationController.drive(CurveTween(curve: Curves.ease)),
+                opacity: _animationController.drive(
+                  CurveTween(curve: Curves.ease),
+                ),
                 child: ShaderMask(
                   blendMode: BlendMode.dstIn,
                   shaderCallback: (rect) {
@@ -151,7 +159,9 @@ class _VnDetailScreenState extends ConsumerState<VnDetailScreen>
                         Color.fromARGB(70, 0, 0, 0),
                         Colors.transparent,
                       ],
-                    ).createShader(Rect.fromLTRB(0, 0, rect.width, rect.height));
+                    ).createShader(
+                      Rect.fromLTRB(0, 0, rect.width, rect.height),
+                    );
                   },
                   child: _imgCover(isCensor: _coverNeedCensor),
                 ),
@@ -159,7 +169,7 @@ class _VnDetailScreenState extends ConsumerState<VnDetailScreen>
             ),
             NestedScrollView(
               headerSliverBuilder: (_, bool inBoxScrolled) {
-                return [VnDetailAppBar(vnId: _vnId)];
+                return [VnDetailAppBar(p1: widget.p1)];
               },
               //
               // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

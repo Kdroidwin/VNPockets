@@ -19,7 +19,7 @@ class NetConsts {
   static const String BASE_URL = "https://api.vndb.org";
 
   static const String P1_FIELDS =
-      "title, image.url, image.sexual, image.violence, image.thumbnail, length, rating, "
+      "title, titles.lang, titles.title, image.url, image.sexual, image.violence, image.thumbnail, length, rating, "
       "votecount, olang, released, description";
 
   static const String P2a_FIELDS =
@@ -29,7 +29,7 @@ class NetConsts {
   static const String P2b_FIELDS = "minage, languages.mtl, languages.lang";
 
   static const String P3_FIELDS =
-      "extlinks.url, relations.id, relations.title, relations.relation, relations.relation_official, "
+      "extlinks.url, relations.id, relations.title, relations.titles.lang, relations.titles.title, relations.relation, relations.relation_official, "
       "relations.image.url, relations.image.sexual, relations.image.violence, relations.image.thumbnail, "
       "relations.length, relations.votecount, relations.olang, relations.released, relations.rating, "
       "relations.description";

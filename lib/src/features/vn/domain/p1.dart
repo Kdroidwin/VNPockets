@@ -2,6 +2,8 @@
 import 'dart:convert';
 
 import 'package:vndb_lite/src/features/vn/domain/others.dart';
+import 'package:vndb_lite/src/features/theme/theme_data_provider.dart';
+import 'package:vndb_lite/src/util/alt_provider_reader.dart';
 
 abstract class VnDataPhase {}
 
@@ -9,6 +11,7 @@ class VnDataPhase01 implements VnDataPhase {
   const VnDataPhase01({
     required this.id,
     required this.title,
+    this.japaneseTitle,
     this.image,
     this.rating,
     this.votecount,
@@ -20,6 +23,20 @@ class VnDataPhase01 implements VnDataPhase {
 
   final String id;
   final String title;
+  final String? japaneseTitle;
+
+  /// The VNDB Japanese title is used only when the user explicitly enables it.
+  String get displayTitle {
+    try {
+      final useJapanese = ref_.read(japaneseTitlesProvider);
+      return useJapanese && japaneseTitle != null && japaneseTitle!.isNotEmpty
+          ? japaneseTitle!
+          : title;
+    } catch (_) {
+      return title;
+    }
+  }
+
   final VnImage? image;
   final double? rating;
   final int? votecount;
@@ -31,6 +48,7 @@ class VnDataPhase01 implements VnDataPhase {
   VnDataPhase01 copyWith({
     String? id,
     String? title,
+    String? japaneseTitle,
     VnImage? image,
     double? rating,
     int? votecount,
@@ -42,6 +60,7 @@ class VnDataPhase01 implements VnDataPhase {
     return VnDataPhase01(
       id: id ?? this.id,
       title: title ?? this.title,
+      japaneseTitle: japaneseTitle ?? this.japaneseTitle,
       image: image ?? this.image,
       rating: rating ?? this.rating,
       votecount: votecount ?? this.votecount,
@@ -56,6 +75,7 @@ class VnDataPhase01 implements VnDataPhase {
     return <String, dynamic>{
       'id': id,
       'title': title,
+      'japaneseTitle': japaneseTitle,
       'image': image?.toMap(),
       'rating': rating,
       'votecount': votecount,
@@ -70,6 +90,8 @@ class VnDataPhase01 implements VnDataPhase {
     return VnDataPhase01(
       id: data['id'],
       title: data['title'],
+      japaneseTitle:
+          _japaneseTitle(data['titles']) ?? data['japaneseTitle'] as String?,
       image: VnImage(
         url: (data['image']?['url']) ?? '',
         thumbnail: (data['image']?['thumbnail']) ?? '',
@@ -85,6 +107,16 @@ class VnDataPhase01 implements VnDataPhase {
     );
   }
 
+  static String? _japaneseTitle(dynamic titles) {
+    if (titles is! List) return null;
+    for (final entry in titles) {
+      if (entry is Map && entry['lang'] == 'ja' && entry['title'] is String) {
+        return entry['title'] as String;
+      }
+    }
+    return null;
+  }
+
   String toJson() => json.encode(toMap());
 
   factory VnDataPhase01.fromJson(String source) =>
@@ -92,7 +124,7 @@ class VnDataPhase01 implements VnDataPhase {
 
   @override
   String toString() {
-    return 'VnDataPhase01(id: $id, title: $title, image: $image, rating: $rating, votecount: $votecount, olang: $olang, length: $length, released: $released, description: $description)';
+    return 'VnDataPhase01(id: $id, title: $title, japaneseTitle: $japaneseTitle, image: $image, rating: $rating, votecount: $votecount, olang: $olang, length: $length, released: $released, description: $description)';
   }
 
   @override
@@ -101,6 +133,7 @@ class VnDataPhase01 implements VnDataPhase {
 
     return other.id == id &&
         other.title == title &&
+        other.japaneseTitle == japaneseTitle &&
         other.image == image &&
         other.rating == rating &&
         other.votecount == votecount &&
@@ -114,6 +147,7 @@ class VnDataPhase01 implements VnDataPhase {
   int get hashCode {
     return id.hashCode ^
         title.hashCode ^
+        japaneseTitle.hashCode ^
         image.hashCode ^
         rating.hashCode ^
         votecount.hashCode ^

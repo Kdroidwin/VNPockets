@@ -5,6 +5,7 @@ import 'package:vndb_lite/src/features/_base/domain/menu_sections.dart';
 import 'package:vndb_lite/src/util/responsive.dart';
 import 'package:vndb_lite/src/features/_base/data/base_menu_sections.dart';
 import 'package:vndb_lite/src/features/_base/presentation/lower_parts/bottom_progress_indicator_state.dart';
+import 'package:vndb_lite/src/features/theme/theme_data_provider.dart';
 
 import '../../../../util/context_shortcut.dart';
 
@@ -24,6 +25,8 @@ class TabsBottomNavbar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final japaneseUi = ref.watch(japaneseUiProvider);
+    const japaneseLabels = ['ホーム', '検索', 'コレクション', 'その他'];
     return Stack(
       children: [
         if (!onlyProgressIndicator)
@@ -46,18 +49,30 @@ class TabsBottomNavbar extends ConsumerWidget {
                   ],
                 ),
                 boxShadow: const [
-                  BoxShadow(color: Color.fromARGB(150, 0, 0, 0), spreadRadius: 2, blurRadius: 6),
+                  BoxShadow(
+                    color: Color.fromARGB(150, 0, 0, 0),
+                    spreadRadius: 2,
+                    blurRadius: 6,
+                  ),
                 ],
               ),
               child: BottomNavigationBar(
                 // showSelectedLabels: false,
                 showUnselectedLabels: false,
                 items: [
-                  for (MapEntry<String, MenuSections> menu in BASE_TAB_MENU_SECTIONS.entries)
+                  for (final (index, menu)
+                      in BASE_TAB_MENU_SECTIONS.entries.indexed)
                     BottomNavigationBarItem(
-                      icon: Icon(menu.value.nonActiveIcon, size: responsiveUI.standardIcon),
-                      activeIcon: Icon(menu.value.activeIcon, size: responsiveUI.standardIcon),
-                      label: menu.value.title,
+                      icon: Icon(
+                        menu.value.nonActiveIcon,
+                        size: responsiveUI.standardIcon,
+                      ),
+                      activeIcon: Icon(
+                        menu.value.activeIcon,
+                        size: responsiveUI.standardIcon,
+                      ),
+                      label:
+                          japaneseUi ? japaneseLabels[index] : menu.value.title,
                     ),
                 ],
                 onTap: onTap,

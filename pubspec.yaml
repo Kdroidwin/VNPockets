@@ -109,6 +109,9 @@ dependencies:
   # A better version of tabBar view.
   contentsize_tabbarview: ^0.0.2
   path_provider: ^2.1.5
+  image_picker: ^1.1.2
+  file_picker: ^8.1.7
+  archive: ^4.0.7
 
 #
 # ======================================================================================================
@@ -125,7 +128,7 @@ dev_dependencies:
   build_runner: ^2.4.13
 
   # Lints
-  flutter_lints: ^6.0.0
+  flutter_lints: ^5.0.0
   custom_lint: ^0.8.0
 
   # Helps code faster and lesser.

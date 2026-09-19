@@ -10,20 +10,21 @@ import 'package:vndb_lite/src/util/context_shortcut.dart';
 
 import '../../theme/theme_data_provider.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _showDataList = false;
   bool _showThemeList = false;
   bool _showVnPreviewList = false;
 
   @override
   Widget build(BuildContext context) {
+    final japaneseUi = ref.watch(japaneseUiProvider);
     return SafeArea(
       child: Stack(
         children: [
@@ -62,10 +63,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                icon: Icon(Icons.arrow_back_ios_new, size: responsiveUI.own(0.055)),
+                icon: Icon(
+                  Icons.arrow_back_ios_new,
+                  size: responsiveUI.own(0.055),
+                ),
                 color: kColor(context).tertiary,
               ),
-              title: ShadowText('Settings', fontSize: responsiveUI.own(0.0525)),
+              title: ShadowText(
+                japaneseUi ? '設定' : 'Settings',
+                fontSize: responsiveUI.own(0.0525),
+              ),
             ),
             backgroundColor: kColor(context).primary.withOpacity(0.25),
             //
@@ -90,14 +97,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: kColor(context).secondary,
                         size: responsiveUI.own(0.06),
                       ),
-                      title: ShadowText('Data'),
+                      title: ShadowText(japaneseUi ? 'データ' : 'Data'),
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: responsiveUI.own(0.045),
                         vertical: responsiveUI.own(0.005),
                       ),
                       dense: true,
                       trailing: Icon(
-                        (!_showDataList) ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                        (!_showDataList)
+                            ? Icons.keyboard_arrow_down
+                            : Icons.keyboard_arrow_up,
                         color: kColor(context).secondary,
                         size: responsiveUI.standardIcon,
                       ),
@@ -118,14 +127,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: kColor(context).secondary,
                         size: responsiveUI.own(0.06),
                       ),
-                      title: ShadowText('Theme'),
+                      title: ShadowText(japaneseUi ? 'テーマ' : 'Theme'),
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: responsiveUI.own(0.045),
                         vertical: responsiveUI.own(0.005),
                       ),
                       dense: true,
                       trailing: Icon(
-                        (!_showThemeList) ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                        (!_showThemeList)
+                            ? Icons.keyboard_arrow_down
+                            : Icons.keyboard_arrow_up,
                         color: kColor(context).secondary,
                         size: responsiveUI.standardIcon,
                       ),
@@ -146,14 +157,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: kColor(context).secondary,
                         size: responsiveUI.own(0.06),
                       ),
-                      title: ShadowText('General'),
+                      title: ShadowText(japaneseUi ? '一般' : 'General'),
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: responsiveUI.own(0.045),
                         vertical: responsiveUI.own(0.005),
                       ),
                       dense: true,
                       trailing: Icon(
-                        (!_showVnPreviewList) ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                        (!_showVnPreviewList)
+                            ? Icons.keyboard_arrow_down
+                            : Icons.keyboard_arrow_up,
                         color: kColor(context).secondary,
                         size: responsiveUI.standardIcon,
                       ),

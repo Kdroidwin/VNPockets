@@ -1,4 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:archive/archive.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:vndb_lite/src/common_widgets/custom_label.dart';
 import 'package:vndb_lite/src/common_widgets/generic_shadowy_text.dart';
@@ -7,12 +14,16 @@ import 'package:vndb_lite/src/util/responsive.dart';
 import 'package:vndb_lite/src/features/_base/presentation/lower_parts/bottom_progress_indicator_state.dart';
 import 'package:vndb_lite/src/features/_base/presentation/upper_parts/buttons/refresh_button.dart';
 import 'package:vndb_lite/src/features/settings/application/settings_service.dart';
+import 'package:vndb_lite/src/features/collection/data/local/local_collection_repo.dart';
+import 'package:vndb_lite/src/features/collection/presentation/collection_content_controller.dart';
 import 'package:vndb_lite/src/features/settings/presentation/components/settings_snackbar.dart';
 import 'package:vndb_lite/src/features/settings/presentation/dialog/settings_dialog.dart';
 import 'package:vndb_lite/src/features/settings/presentation/settings_data_state.dart';
 import 'package:vndb_lite/src/features/sync/presentation/auth_screen_controller.dart';
 import 'package:vndb_lite/src/util/context_shortcut.dart';
 import 'package:vndb_lite/src/util/alt_provider_reader.dart';
+import 'package:vndb_lite/src/constants/local_db_constants.dart';
+import 'package:vndb_lite/src/core/local_db/shared_prefs.dart';
 
 class SettingsData extends ConsumerStatefulWidget {
   const SettingsData({super.key});
@@ -21,7 +32,8 @@ class SettingsData extends ConsumerStatefulWidget {
   ConsumerState<SettingsData> createState() => _SettingsDataState();
 }
 
-class _SettingsDataState extends ConsumerState<SettingsData> with SingleTickerProviderStateMixin {
+class _SettingsDataState extends ConsumerState<SettingsData>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _animationController;
   late final Animation<Offset> _offsetAnimation;
 
@@ -35,7 +47,9 @@ class _SettingsDataState extends ConsumerState<SettingsData> with SingleTickerPr
 
     _offsetAnimation = _animationController
         .drive(CurveTween(curve: Curves.easeInOut))
-        .drive(Tween<Offset>(begin: const Offset(0, -0.5), end: const Offset(0, 0)));
+        .drive(
+          Tween<Offset>(begin: const Offset(0, -0.5), end: const Offset(0, 0)),
+        );
   }
 
   @override
@@ -64,6 +78,193 @@ class _SettingsDataState extends ConsumerState<SettingsData> with SingleTickerPr
     await _refreshApp();
   }
 
+  Future<void> _exportCollectionBackup() async {
+    try {
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/vnpockets-collection-backup.json');
+      final backup = ref.read(localCollectionRepoProvider).exportBackup();
+      await file.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(backup),
+      );
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: 'VNPockets collection backup',
+          subject: 'VNPockets collection backup',
+        ),
+      );
+      feedbackSnackBar(text: 'Choose Files or another app to save the backup.');
+    } catch (_) {
+      feedbackSnackBar(text: 'Backup export failed.', icon: Icons.error);
+    }
+  }
+
+  Future<void> _importCollectionBackup() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+    final path = result?.files.single.path;
+    if (path == null) return;
+    try {
+      final decoded = jsonDecode(await File(path).readAsString());
+      if (decoded is! Map<String, dynamic>) throw const FormatException();
+      final count = await ref
+          .read(localCollectionRepoProvider)
+          .importBackup(decoded);
+      ref.invalidate(collectionContentControllerProvider);
+      await _refreshApp(all: true);
+      feedbackSnackBar(text: '$count collection entries imported.');
+    } catch (_) {
+      feedbackSnackBar(
+        text: 'Import failed: choose a VNPockets backup file.',
+        icon: Icons.error,
+      );
+    }
+  }
+
+  Future<void> _exportFullBackup() async {
+    try {
+      final prefs = ref.read(sharedPrefProvider);
+      final docs = await getApplicationDocumentsDirectory();
+      final settings = <String, dynamic>{
+        for (final key in prefs.getKeys().where(
+          (key) =>
+              key == DBKeys.THEME_CONF ||
+              key == DBKeys.AMOLED_ACCENT_COLOR ||
+              key == DBKeys.JAPANESE_TITLES_CONF ||
+              key == DBKeys.JAPANESE_UI_CONF ||
+              key == DBKeys.COVER_CENSOR_CONF ||
+              key == DBKeys.SHOW_CHART_CONF ||
+              key == DBKeys.SHOW_COLLECTION_ITEM_LABELS ||
+              key == DBKeys.GROUP_COLLECTION_BY_DEVELOPER ||
+              key == DBKeys.CUSTOM_FONT_SIZE_CONF ||
+              key == DBKeys.MAX_PREVIEW_ITEMS_CONF ||
+              key == DBKeys.MAX_ITEMS_PER_ROW_PORTRAIT_CONF ||
+              key == DBKeys.MAX_ITEMS_PER_ROW_LANDSCAPE_CONF ||
+              key == DBKeys.HOME_ARRANGEMENT ||
+              key == DBKeys.COLLECTION_ARRANGEMENT ||
+              key == DBKeys.STARTUP_TAB,
+        ))
+          key: prefs.get(key),
+      };
+      final archive = Archive();
+      final customCovers = <String, String>{};
+      final manifest = {
+        'format': 'vnpockets-full-backup',
+        'version': 1,
+        'collection': ref.read(localCollectionRepoProvider).exportBackup(),
+        'settings': settings,
+        'media': <String, String>{},
+        'customCovers': customCovers,
+      };
+      final media = manifest['media'] as Map<String, String>;
+      for (final file in docs.listSync().whereType<File>()) {
+        final name = file.uri.pathSegments.last;
+        if (!name.startsWith('vnpockets_background.') &&
+            !name.startsWith('vnpockets_cover_'))
+          continue;
+        final archiveName = 'media/$name';
+        archive.addFile(
+          ArchiveFile(archiveName, file.lengthSync(), file.readAsBytesSync()),
+        );
+        media[name] = archiveName;
+      }
+      final background = prefs.getString(DBKeys.CUSTOM_BACKGROUND_PATH);
+      if (background != null)
+        manifest['backgroundFile'] = background.split('/').last;
+      for (final key in prefs.getKeys().where(
+        (key) => key.startsWith(DBKeys.CUSTOM_COVER_PATH),
+      )) {
+        final path = prefs.getString(key);
+        if (path != null) customCovers[key] = path.split('/').last;
+      }
+      final manifestBytes = utf8.encode(
+        const JsonEncoder.withIndent('  ').convert(manifest),
+      );
+      archive.addFile(
+        ArchiveFile('backup.json', manifestBytes.length, manifestBytes),
+      );
+      final output = await getTemporaryDirectory();
+      final file = File('${output.path}/vnpockets-full-backup.zip');
+      await file.writeAsBytes(ZipEncoder().encodeBytes(archive));
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path)], text: 'VNPockets full backup'),
+      );
+    } catch (_) {
+      feedbackSnackBar(text: 'Full backup export failed.', icon: Icons.error);
+    }
+  }
+
+  Future<void> _importFullBackup() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['zip'],
+    );
+    final path = result?.files.single.path;
+    if (path == null) return;
+    try {
+      final archive = ZipDecoder().decodeBytes(await File(path).readAsBytes());
+      final manifestFile = archive.findFile('backup.json');
+      if (manifestFile == null) throw const FormatException();
+      final manifest = jsonDecode(
+        utf8.decode(manifestFile.content as List<int>),
+      );
+      if (manifest is! Map || manifest['format'] != 'vnpockets-full-backup') {
+        throw const FormatException();
+      }
+      final docs = await getApplicationDocumentsDirectory();
+      for (final file in archive.files.where(
+        (file) => file.name.startsWith('media/'),
+      )) {
+        await File(
+          '${docs.path}/${file.name.split('/').last}',
+        ).writeAsBytes(file.content as List<int>);
+      }
+      final prefs = ref.read(sharedPrefProvider);
+      final settings = manifest['settings'];
+      if (settings is Map) {
+        for (final entry in settings.entries) {
+          if (entry.key is! String) continue;
+          final key = entry.key as String;
+          final value = entry.value;
+          if (value is bool) await prefs.setBool(key, value);
+          if (value is int) await prefs.setInt(key, value);
+          if (value is String) await prefs.setString(key, value);
+          if (value is List)
+            await prefs.setStringList(key, value.whereType<String>().toList());
+        }
+      }
+      final background = manifest['backgroundFile'];
+      if (background is String)
+        await prefs.setString(
+          DBKeys.CUSTOM_BACKGROUND_PATH,
+          '${docs.path}/$background',
+        );
+      final covers = manifest['customCovers'];
+      if (covers is Map) {
+        for (final entry in covers.entries) {
+          if (entry.key is String && entry.value is String) {
+            await prefs.setString(
+              entry.key as String,
+              '${docs.path}/${entry.value}',
+            );
+          }
+        }
+      }
+      await ref
+          .read(localCollectionRepoProvider)
+          .importBackup(
+            Map<String, dynamic>.from(manifest['collection'] as Map),
+          );
+      ref.invalidate(collectionContentControllerProvider);
+      await _refreshApp(all: true);
+      feedbackSnackBar(text: 'Full backup imported.');
+    } catch (_) {
+      feedbackSnackBar(text: 'Full backup import failed.', icon: Icons.error);
+    }
+  }
+
   //
   // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   //
@@ -75,7 +276,11 @@ class _SettingsDataState extends ConsumerState<SettingsData> with SingleTickerPr
     // Does not do any process whatsoever if there is no internet connection.
     final hasConnection = ref.read(connectivityNotifierProvider);
     if (!hasConnection) {
-      feedbackSnackBar(text: 'Refresh failed.', iconColor: Colors.red, icon: Icons.warning);
+      feedbackSnackBar(
+        text: 'Refresh failed.',
+        iconColor: Colors.red,
+        icon: Icons.warning,
+      );
       return;
     }
 
@@ -116,7 +321,8 @@ class _SettingsDataState extends ConsumerState<SettingsData> with SingleTickerPr
 
   Future<void> _deleteVns() async {
     await showSettingsDialog(
-      title: "You are about to delete all visual novels in your collection. Are you sure?",
+      title:
+          "You are about to delete all visual novels in your collection. Are you sure?",
       content: Padding(
         padding: EdgeInsets.symmetric(horizontal: responsiveUI.own(0.05)),
         child: ShadowText(
@@ -186,7 +392,10 @@ class _SettingsDataState extends ConsumerState<SettingsData> with SingleTickerPr
         await ref.read(settingsServiceProvider).clearCache();
         await _refreshApp(all: true, verbose: true);
 
-        feedbackSnackBar(text: 'Welcome to the default back!', icon: Icons.waving_hand);
+        feedbackSnackBar(
+          text: 'Welcome to the default back!',
+          icon: Icons.waving_hand,
+        );
       },
     );
   }
@@ -233,11 +442,12 @@ class _SettingsDataState extends ConsumerState<SettingsData> with SingleTickerPr
     final uId = ref.watch(authScreenControllerProvider);
     final userDidAuth = uId != null;
 
-
     return SlideTransition(
       position: _offsetAnimation,
       child: FadeTransition(
-        opacity: _animationController.drive(CurveTween(curve: Curves.easeInToLinear)),
+        opacity: _animationController.drive(
+          CurveTween(curve: Curves.easeInToLinear),
+        ),
         child: Container(
           alignment: Alignment.centerLeft,
           padding: EdgeInsets.all(responsiveUI.own(0.04)),
@@ -284,7 +494,55 @@ class _SettingsDataState extends ConsumerState<SettingsData> with SingleTickerPr
                 highlightColor: const Color.fromARGB(180, 240, 210, 50),
                 padding: EdgeInsets.all(responsiveUI.own(0.02)),
                 onTap: _refreshVns,
-                children: [ShadowText('Refresh all visual novel in collection')],
+                children: [
+                  ShadowText('Refresh all visual novel in collection'),
+                ],
+              ),
+
+              SizedBox(height: responsiveUI.own(0.03)),
+              CustomLabel(
+                useBorder: true,
+                borderRadius: 12,
+                isSelected: false,
+                borderColor: kColor(context).secondary,
+                padding: EdgeInsets.all(responsiveUI.own(0.02)),
+                onTap: _exportCollectionBackup,
+                children: [ShadowText('Export collection backup')],
+              ),
+
+              SizedBox(height: responsiveUI.own(0.03)),
+              CustomLabel(
+                useBorder: true,
+                borderRadius: 12,
+                isSelected: false,
+                borderColor: kColor(context).secondary,
+                padding: EdgeInsets.all(responsiveUI.own(0.02)),
+                onTap: _importCollectionBackup,
+                children: [ShadowText('Import collection backup')],
+              ),
+              SizedBox(height: responsiveUI.own(0.03)),
+              CustomLabel(
+                useBorder: true,
+                borderRadius: 12,
+                isSelected: false,
+                borderColor: kColor(context).secondary,
+                padding: EdgeInsets.all(responsiveUI.own(0.02)),
+                onTap: _exportFullBackup,
+                children: [
+                  ShadowText('Export full backup (settings & images)'),
+                ],
+              ),
+              SizedBox(height: responsiveUI.own(0.03)),
+              CustomLabel(
+                useBorder: true,
+                borderRadius: 12,
+                isSelected: false,
+                borderColor: kColor(context).secondary,
+                padding: EdgeInsets.all(responsiveUI.own(0.02)),
+                onTap: _importFullBackup,
+                children: [
+                  ShadowText('Import full backup (settings & images)'),
+                ],
               ),
 
               //

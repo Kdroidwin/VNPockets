@@ -36,7 +36,9 @@ class VnSelection extends ConsumerWidget {
     }
 
     // vnTitles will be an indicator whether the selection is single or for multiple.
-    final List<String> vnTitles = [for (VnDataPhase01 selectedVn in p1) selectedVn.title];
+    final List<String> vnTitles = [
+      for (VnDataPhase01 selectedVn in p1) selectedVn.displayTitle,
+    ];
 
     // Initialization.
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -57,7 +59,10 @@ class VnSelection extends ConsumerWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          Divider(color: kColor(context).tertiary, height: responsiveUI.own(0.05)),
+          Divider(
+            color: kColor(context).tertiary,
+            height: responsiveUI.own(0.05),
+          ),
 
           //
           // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,10 +95,14 @@ class VnSelection extends ConsumerWidget {
                   ShadowText('Status: '),
                   Consumer(
                     builder: (context, ref, child) {
-                      final selectionController = ref.watch(vnSelectionControllerProvider);
+                      final selectionController = ref.watch(
+                        vnSelectionControllerProvider,
+                      );
 
                       return ShadowText(
-                        toBeginningOfSentenceCase<String>(selectionController.status),
+                        toBeginningOfSentenceCase<String>(
+                          selectionController.status,
+                        ),
                         color: kColor(context).secondary,
                         fontWeight: FontWeight.bold,
                       );
@@ -107,11 +116,15 @@ class VnSelection extends ConsumerWidget {
               SizedBox(width: responsiveUI.own(0.1)),
               Consumer(
                 builder: (context, ref, child) {
-                  final selectionController = ref.watch(vnSelectionControllerProvider);
+                  final selectionController = ref.watch(
+                    vnSelectionControllerProvider,
+                  );
 
                   return RecordVoteOption(
                     onChanged: (value) {
-                      ref.read(vnSelectionControllerProvider.notifier).copyWith(vote: value);
+                      ref
+                          .read(vnSelectionControllerProvider.notifier)
+                          .copyWith(vote: value);
                     },
                     voteValue: selectionController.vote,
                   );
@@ -132,7 +145,9 @@ class VnSelection extends ConsumerWidget {
                 for (String vnStatusCode in COLLECTION_STATUS_DATA.keys)
                   Consumer(
                     builder: (context, ref, child) {
-                      final selectionController = ref.watch(vnSelectionControllerProvider);
+                      final selectionController = ref.watch(
+                        vnSelectionControllerProvider,
+                      );
 
                       return RecordStatusOption(
                         onTap: () {

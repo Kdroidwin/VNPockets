@@ -7,9 +7,9 @@ final class AppInfo {
   static const String unknown = "UNKNOWN";
 
   // ! These two are crucial and should not depend on the packageInfo or any changing operations.
-  static const String TITLE = "VNDB Lite";
+  static const String TITLE = "VNPockets";
   static const String DESCRIPTION =
-      "A lite, free, and open-source mobile version of your favorite website, vndb.org.";
+      "A pocket-friendly visual novel database client powered by VNDB.";
 
   // ! Must be initialized first before being used.
   static late final String CURRENT_VERSION;

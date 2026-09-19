@@ -13,6 +13,7 @@ import 'package:vndb_lite/src/features/vn_item/presentation/detail_non_summary/v
 import 'package:vndb_lite/src/features/vn_item/presentation/detail_summary/vn_item_grid_details_summary.dart';
 import 'package:vndb_lite/src/features/vn_item/presentation/vn_item_grid_cover_censor_notifier.dart';
 import 'package:vndb_lite/src/routing/app_router.dart';
+import 'package:vndb_lite/src/features/settings/presentation/settings_general_state.dart';
 import 'package:vndb_lite/src/util/context_shortcut.dart';
 
 // ignore: must_be_immutable
@@ -111,8 +112,15 @@ class VnItemGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final showLabel =
+        withLabel &&
+        (!App.isInCollectionScreen ||
+            ref.watch(settingsGeneralStateProvider).showCollectionItemLabels);
     return Padding(
-      padding: (isGridView) ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 6),
+      padding:
+          (isGridView)
+              ? EdgeInsets.zero
+              : const EdgeInsets.symmetric(horizontal: 6),
       child: ClipRRect(
         clipBehavior: Clip.hardEdge,
         borderRadius: BorderRadius.circular(12),
@@ -156,7 +164,9 @@ class VnItemGrid extends ConsumerWidget {
               child: StatefulBuilder(
                 builder: (BuildContext context, setState) {
                   void toggle() {
-                    setState(() => _showVnDetailSummary = !_showVnDetailSummary);
+                    setState(
+                      () => _showVnDetailSummary = !_showVnDetailSummary,
+                    );
                   }
 
                   return (_showVnDetailSummary)
@@ -168,7 +178,7 @@ class VnItemGrid extends ConsumerWidget {
                       : VnItemGridDetails(
                         p1: p1,
                         labelCode: labelCode,
-                        withLabel: withLabel,
+                        withLabel: showLabel,
                         toggleVnDetailSummary: toggle,
                       );
                 },

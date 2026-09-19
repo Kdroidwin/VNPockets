@@ -9,19 +9,30 @@ import 'package:vndb_lite/src/features/vn/data/local_vn_repo.dart';
 import 'package:vndb_lite/src/features/vn/domain/p1.dart';
 import 'package:vndb_lite/src/features/vn_item/presentation/detail_non_summary/vn_record_state.dart';
 import 'package:vndb_lite/src/util/format_minutes.dart';
+import 'package:vndb_lite/src/features/settings/presentation/settings_general_state.dart';
 
 class VnItemDetailLabel extends ConsumerWidget {
-  const VnItemDetailLabel({super.key, required this.p1, required this.labelCode});
+  const VnItemDetailLabel({
+    super.key,
+    required this.p1,
+    required this.labelCode,
+  });
 
   final VnDataPhase01 p1;
 
   final String labelCode;
 
-  Future<String> _getLabelData(WidgetRef ref, String label, {VnRecord? record}) async {
+  Future<String> _getLabelData(
+    WidgetRef ref,
+    String label, {
+    VnRecord? record,
+  }) async {
     final labelCode = label.toLowerCase();
     if (labelCode == SortableCode.title.name || labelCode.isEmpty) return '';
-    if (labelCode == SortableCode.rating.name) return (p1.rating! / 10).toStringAsFixed(2);
-    if (labelCode == SortableCode.votecount.name) return p1.votecount.toString();
+    if (labelCode == SortableCode.rating.name)
+      return (p1.rating! / 10).toStringAsFixed(2);
+    if (labelCode == SortableCode.votecount.name)
+      return p1.votecount.toString();
     if (labelCode == SortableCode.released.name) return p1.released!;
 
     final DateFormat dtFormatter = DateFormat.yMd();
@@ -32,15 +43,21 @@ class VnItemDetailLabel extends ConsumerWidget {
       return getVnLength(p2!.length_minutes ?? 0);
     }
 
-    if (labelCode == SortableCode.collection.name && record != null) return record.status;
+    if (labelCode == SortableCode.collection.name && record != null)
+      return record.status;
 
-    if (labelCode == SortableCode.vote.name && record != null) return record.vote.toString();
+    if (labelCode == SortableCode.vote.name && record != null)
+      return record.vote.toString();
 
-    if (labelCode == SortableCode.added.name && record != null && record.added != 'null') {
+    if (labelCode == SortableCode.added.name &&
+        record != null &&
+        record.added != 'null') {
       return dtFormatter.format(DateTime.parse(record.added!));
     }
 
-    if (labelCode == SortableCode.started.name && record != null && record.started != 'null') {
+    if (labelCode == SortableCode.started.name &&
+        record != null &&
+        record.started != 'null') {
       return dtFormatter.format(DateTime.parse(record.started!));
     }
 
@@ -61,6 +78,15 @@ class VnItemDetailLabel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vnRecord = ref.watch(vnRecordStateProvider(p1.id));
+    final isDateLabel =
+        labelCode == SortableCode.released.name ||
+        labelCode == SortableCode.added.name ||
+        labelCode == SortableCode.started.name;
+    if (App.isInCollectionScreen &&
+        isDateLabel &&
+        !ref.watch(settingsGeneralStateProvider).showCollectionCoverDates) {
+      return const SizedBox.shrink();
+    }
 
     if (labelCode != SortableCode.title.name) {
       return FutureBuilder(

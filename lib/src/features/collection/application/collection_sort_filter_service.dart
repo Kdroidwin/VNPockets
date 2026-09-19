@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:vndb_lite/src/constants/defaults.dart';
 import 'package:vndb_lite/src/features/collection/application/local_filter_service.dart';
 import 'package:vndb_lite/src/features/collection/data/collection_status_data.dart';
+import 'package:vndb_lite/src/features/collection/data/local/local_collection_repo.dart';
 import 'package:vndb_lite/src/features/collection/presentation/collection_content_controller.dart';
 import 'package:vndb_lite/src/features/sort_filter/domain/filter_.dart';
 import 'package:vndb_lite/src/features/sort_filter/domain/sort_.dart';
+import 'package:vndb_lite/src/features/sort_filter/data/sortable_data.dart';
 import 'package:vndb_lite/src/features/vn/domain/p1.dart';
 import 'package:vndb_lite/src/features/vn_item/presentation/vn_item_grid_.dart';
 import 'package:vndb_lite/src/util/alt_provider_reader.dart';
@@ -20,15 +21,36 @@ class CollectionSortFilterService {
   static Future<void> sortData(SortData conf) async {
     final sortBy = conf.sort;
 
+    if (sortBy == SortableCode.custom.name) {
+      final collection = ref_.read(localCollectionRepoProvider);
+      for (String statusName in COLLECTION_STATUS_DATA.keys) {
+        final order = collection.getCustomOrder(statusName);
+        final positions = <String, int>{
+          for (var index = 0; index < order.length; index++)
+            order[index]: index,
+        };
+        rawP1BasedOnStatus[statusName]!.sort(
+          (a, b) => (positions[a['id']] ?? order.length).compareTo(
+            positions[b['id']] ?? order.length,
+          ),
+        );
+      }
+      return;
+    }
+
     if (conf.reverse!) {
       for (String statusName in COLLECTION_STATUS_DATA.keys) {
-        rawP1BasedOnStatus[statusName]!.sort((a, b) => b[sortBy].compareTo(a[sortBy]));
+        rawP1BasedOnStatus[statusName]!.sort(
+          (a, b) => b[sortBy].compareTo(a[sortBy]),
+        );
       }
       return;
     }
 
     for (String statusName in COLLECTION_STATUS_DATA.keys) {
-      rawP1BasedOnStatus[statusName]!.sort((a, b) => a[sortBy].compareTo(b[sortBy]));
+      rawP1BasedOnStatus[statusName]!.sort(
+        (a, b) => a[sortBy].compareTo(b[sortBy]),
+      );
     }
   }
 
@@ -39,17 +61,25 @@ class CollectionSortFilterService {
 
     for (String statusName in COLLECTION_STATUS_DATA.keys) {
       //
-      for (Map<String, dynamic> adaptedVnData in rawP1BasedOnStatus[statusName]!) {
+      for (Map<String, dynamic> adaptedVnData
+          in rawP1BasedOnStatus[statusName]!) {
         // If not using any filter, then simply ignore all the filter check.
         if (!isUsingFilter(filter)) {
-          await _addToVnWidgetList(adaptedVnData, statusName: statusName, sort: sort);
+          await _addToVnWidgetList(
+            adaptedVnData,
+            statusName: statusName,
+            sort: sort,
+          );
           continue;
         }
 
         final Map<String, dynamic> searchFilter = {
           "keywords": searchKeywords,
           "searchQuery": filter.search,
-          "dataToBeSearched": _getDataForSearchQuery(filter.search, adaptedVnData),
+          "dataToBeSearched": _getDataForSearchQuery(
+            filter.search,
+            adaptedVnData,
+          ),
         };
 
         final bool canContinue = await _canVnPassFilters(
@@ -59,7 +89,11 @@ class CollectionSortFilterService {
           adaptedVnData,
         );
         if (canContinue) {
-          await _addToVnWidgetList(adaptedVnData, statusName: statusName, sort: sort);
+          await _addToVnWidgetList(
+            adaptedVnData,
+            statusName: statusName,
+            sort: sort,
+          );
         }
       }
     }
@@ -72,7 +106,8 @@ class CollectionSortFilterService {
   static bool isUsingFilter(FilterData conf) {
     // Checks whether the current filter is not the same as the default one or
     // the same.
-    return conf.copyWith(search: conf.search.trim()) != Default.LOCAL_FILTER_CONF;
+    return conf.copyWith(search: conf.search.trim()) !=
+        Default.LOCAL_FILTER_CONF;
   }
 
   static List<String> _getSearchKeywords(String? searchQuery) {
@@ -103,7 +138,10 @@ class CollectionSortFilterService {
     return searchQuery.length > 4 && searchQuery.substring(0, 4) == 'tag:';
   }
 
-  static String _getDataForSearchQuery(String? searchQuery, Map<String, dynamic> vnData) {
+  static String _getDataForSearchQuery(
+    String? searchQuery,
+    Map<String, dynamic> vnData,
+  ) {
     if (_isSearchingForAll(searchQuery)) return " ";
     if (_isSearchingForDevs(searchQuery!)) return "${vnData['devs']}";
     if (_isSearchingForTags(searchQuery)) return "${vnData['tags']}";
@@ -168,7 +206,8 @@ class CollectionSortFilterService {
             VnItemGrid(
               key: UniqueKey(),
               p1: VnDataPhase01.fromMap(adaptedVnData),
-              labelCode: sort.sort ?? '',
+              labelCode:
+                  sort.sort == SortableCode.custom.name ? '' : sort.sort ?? '',
               isGridView: true,
             ),
           ],

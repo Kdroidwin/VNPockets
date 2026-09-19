@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vndb_lite/src/common_widgets/generic_shadowy_text.dart';
 import 'package:vndb_lite/src/features/_base/domain/menu_sections.dart';
 import 'package:vndb_lite/src/util/responsive.dart';
 import 'package:vndb_lite/src/features/_base/data/base_menu_sections.dart';
+import 'package:vndb_lite/src/features/theme/theme_data_provider.dart';
 
 import '../../../../util/context_shortcut.dart';
 
-class TabsSideNavbar extends StatelessWidget {
-  const TabsSideNavbar({super.key, required this.selectedIndex, required this.onTap});
+class TabsSideNavbar extends ConsumerWidget {
+  const TabsSideNavbar({
+    super.key,
+    required this.selectedIndex,
+    required this.onTap,
+  });
 
   final int selectedIndex;
   final void Function(int)? onTap;
@@ -15,7 +21,9 @@ class TabsSideNavbar extends StatelessWidget {
   static final double widthSideNav = responsiveUI.own(0.23);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final japaneseUi = ref.watch(japaneseUiProvider);
+    const japaneseLabels = ['ホーム', '検索', 'コレクション', 'その他'];
     // Only shows in landscape mode
     return Row(
       children: [
@@ -35,7 +43,11 @@ class TabsSideNavbar extends StatelessWidget {
               ],
             ),
             boxShadow: const [
-              BoxShadow(color: Color.fromARGB(150, 0, 0, 0), spreadRadius: 2, blurRadius: 6),
+              BoxShadow(
+                color: Color.fromARGB(150, 0, 0, 0),
+                spreadRadius: 2,
+                blurRadius: 6,
+              ),
             ],
           ),
           child: NavigationRail(
@@ -51,16 +63,27 @@ class TabsSideNavbar extends StatelessWidget {
               color: kColor(context).tertiary,
             ),
             selectedIconTheme: IconThemeData(color: kColor(context).secondary),
-            unselectedIconTheme: IconThemeData(color: kColor(context).secondary.withAlpha(120)),
+            unselectedIconTheme: IconThemeData(
+              color: kColor(context).secondary.withAlpha(120),
+            ),
             selectedIndex: selectedIndex,
             onDestinationSelected: onTap,
             labelType: NavigationRailLabelType.all,
             destinations: [
-              for (MapEntry<String, MenuSections> menu in BASE_TAB_MENU_SECTIONS.entries)
+              for (final (index, menu)
+                  in BASE_TAB_MENU_SECTIONS.entries.indexed)
                 NavigationRailDestination(
-                  icon: Icon(menu.value.nonActiveIcon, size: responsiveUI.standardIcon),
-                  selectedIcon: Icon(menu.value.activeIcon, size: responsiveUI.standardIcon),
-                  label: Text(menu.value.title),
+                  icon: Icon(
+                    menu.value.nonActiveIcon,
+                    size: responsiveUI.standardIcon,
+                  ),
+                  selectedIcon: Icon(
+                    menu.value.activeIcon,
+                    size: responsiveUI.standardIcon,
+                  ),
+                  label: Text(
+                    japaneseUi ? japaneseLabels[index] : menu.value.title,
+                  ),
                 ),
             ],
           ),
